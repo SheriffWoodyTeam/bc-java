@@ -1,4 +1,7 @@
 jdk:
   - openjdk17
+cache:
+  - "$HOME/.gradle/caches"
+  - "$HOME/.gradle/wrapper"
 install:
   - ./gradlew publishToMavenLocal -Pskip.signing -x test
