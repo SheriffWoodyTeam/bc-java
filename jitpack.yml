@@ -4,4 +4,4 @@ cache:
   - "$HOME/.gradle/caches"
   - "$HOME/.gradle/wrapper"
 install:
-  - ./gradlew publishToMavenLocal -Pskip.signing -x test
+  - ./gradlew publishToMavenLocal -x test
