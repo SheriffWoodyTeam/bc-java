@@ -34,6 +34,8 @@ public class MLKEMPrivateKeyParameters
         this.rho = Arrays.clone(rho);
         this.seed = Arrays.clone(seed);
         this.prefFormat = BOTH;
+
+        validate();
     }
 
     public MLKEMPrivateKeyParameters(MLKEMParameters params, byte[] encoding)
@@ -73,6 +75,8 @@ public class MLKEMPrivateKeyParameters
             this.seed = null;
         }
 
+        validate();
+
         if (pubKey != null)
         {
             if (!Arrays.constantTimeAreEqual(this.t, pubKey.t) || !Arrays.constantTimeAreEqual(this.rho, pubKey.rho))
@@ -95,9 +99,26 @@ public class MLKEMPrivateKeyParameters
         this.nonce = params.nonce;
         this.seed = params.seed;
         this.prefFormat = preferredFormat;
+
+        validate();
     }
 
+    private void validate()
+    {
+        MLKEMEngine engine = getParameters().getEngine();
+        if (!engine.checkPrivateKey(getEncoded()))
+        {
+            throw new IllegalArgumentException("'encoding' fails hash check");
+        }
+    }
+
+    /** @deprecated Use {@link #withPreferredFormat(int)} instead. */
     public MLKEMPrivateKeyParameters getParametersWithFormat(int format)
+    {
+        return withPreferredFormat(format); 
+    }
+
+    public MLKEMPrivateKeyParameters withPreferredFormat(int format)
     {
         if (this.prefFormat == format)
         {
@@ -131,7 +152,7 @@ public class MLKEMPrivateKeyParameters
 
     public byte[] getEncoded()
     {
-        return Arrays.concatenate(new byte[][]{ s, t, rho, hpk, nonce });
+        return Arrays.concatenate(new byte[][]{s, t, rho, hpk, nonce});
     }
 
     public byte[] getHPK()
