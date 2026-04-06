@@ -29,10 +29,12 @@ public class AllTests
         suite.addTestSuite(InstanceTest.class);
         suite.addTestSuite(KeyManagerFactoryTest.class);
         suite.addTestSuite(MLDSACredentialsTest.class);
+        suite.addTestSuite(PKCS12Test.class);
         suite.addTestSuite(PSSCredentialsTest.class);
         suite.addTestSuite(SLHDSACredentialsTest.class);
         suite.addTestSuite(SSLServerSocketTest.class);
         suite.addTestSuite(SSLSocketTest.class);
+
 
         if (hasClass("javax.net.ssl.CertPathTrustManagerParameters"))
         {
@@ -43,6 +45,7 @@ public class AllTests
         suite.addTest(CipherSuitesEngineTestSuite.suite());
         suite.addTest(FipsCipherSuitesTestSuite.suite());
         suite.addTest(FipsCipherSuitesEngineTestSuite.suite());
+
 
         return new BCTestSetup(suite);
     }
