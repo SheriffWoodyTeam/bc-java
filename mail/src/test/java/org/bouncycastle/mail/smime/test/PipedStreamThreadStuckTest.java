@@ -1,5 +1,6 @@
 package org.bouncycastle.mail.smime.test;
 
+import java.util.Iterator;
 import java.util.Properties;
 
 import javax.activation.DataHandler;
@@ -10,9 +11,8 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import javax.mail.util.ByteArrayDataSource;
 
-import org.bouncycastle.mail.smime.SMIMESigned;
-
 import junit.framework.TestCase;
+import org.bouncycastle.mail.smime.SMIMESigned;
 
 /**
  * Tests for proper cleanup of JavaMail's internal PipedInputStream feeder threads.
@@ -82,8 +82,9 @@ public class PipedStreamThreadStuckTest extends TestCase
 {
     public static void assertNoJavaMailDataHandlerThreads(String part)
     {
-        for (Thread t : Thread.getAllStackTraces().keySet())
+        for (Iterator it = Thread.getAllStackTraces().keySet().iterator(); it.hasNext();)
         {
+            Thread t = (Thread)it.next();
             if (t.getName().equals("DataHandler.getInputStream"))
             {
                 if (t.isAlive())

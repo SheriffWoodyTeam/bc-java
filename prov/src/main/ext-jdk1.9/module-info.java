@@ -85,7 +85,6 @@ module org.bouncycastle.provider
     exports org.bouncycastle.jcajce.provider.keystore.bc;
     exports org.bouncycastle.jcajce.provider.keystore.bcfks;
     exports org.bouncycastle.jcajce.provider.keystore.pkcs12;
-    exports org.bouncycastle.jcajce.provider.keystore.util;
     exports org.bouncycastle.jcajce.provider.symmetric;
     exports org.bouncycastle.jcajce.provider.symmetric.util;
     exports org.bouncycastle.jcajce.provider.util;
@@ -111,7 +110,7 @@ module org.bouncycastle.provider
     exports org.bouncycastle.math.raw;
     exports org.bouncycastle.pqc.asn1;
     exports org.bouncycastle.pqc.crypto;
-    exports org.bouncycastle.pqc.crypto.bike;
+    exports org.bouncycastle.pqc.legacy.bike;
     exports org.bouncycastle.pqc.crypto.cmce;
     exports org.bouncycastle.pqc.crypto.crystals.dilithium;
     exports org.bouncycastle.pqc.crypto.mldsa;
@@ -125,10 +124,10 @@ module org.bouncycastle.provider
     exports org.bouncycastle.pqc.crypto.newhope;
     exports org.bouncycastle.pqc.crypto.ntru;
     exports org.bouncycastle.pqc.crypto.ntruprime;
-    exports org.bouncycastle.pqc.crypto.picnic;
+    exports org.bouncycastle.pqc.legacy.picnic;
     exports org.bouncycastle.pqc.crypto.saber;
     exports org.bouncycastle.pqc.crypto.sphincs;
-    exports org.bouncycastle.pqc.crypto.sphincsplus;
+    exports org.bouncycastle.pqc.legacy.sphincsplus;
     exports org.bouncycastle.pqc.crypto.snova;
     exports org.bouncycastle.pqc.crypto.util;
     exports org.bouncycastle.pqc.crypto.xmss;

@@ -5,15 +5,16 @@ import org.bouncycastle.crypto.params.DSAPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
 import org.bouncycastle.crypto.params.Ed448PrivateKeyParameters;
+import org.bouncycastle.crypto.params.MLDSAPrivateKeyParameters;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
-import org.bouncycastle.pqc.crypto.mldsa.MLDSAPrivateKeyParameters;
-import org.bouncycastle.pqc.crypto.slhdsa.SLHDSAPrivateKeyParameters;
+import org.bouncycastle.crypto.params.SLHDSAPrivateKeyParameters;
 import org.bouncycastle.tls.Certificate;
 import org.bouncycastle.tls.DefaultTlsCredentialedSigner;
 import org.bouncycastle.tls.SignatureAndHashAlgorithm;
 import org.bouncycastle.tls.SignatureScheme;
 import org.bouncycastle.tls.crypto.TlsCryptoParameters;
 import org.bouncycastle.tls.crypto.TlsSigner;
+import org.bouncycastle.util.Strings;
 
 /**
  * Credentialed class for generating signatures based on the use of primitives from the BC light-weight API.
@@ -51,11 +52,11 @@ public class BcDefaultTlsCredentialedSigner
             {
                 int signatureScheme = SignatureScheme.from(signatureAndHashAlgorithm);
 
-                // TODO[RFC 8998]
-//                if (SignatureScheme.sm2sig_sm3 == signatureScheme)
-//                {
-//                    return new BcTlsSM2Signer(crypto, privKeyEC, Strings.toByteArray("TLSv1.3+GM+Cipher+Suite"));
-//                }
+                // [RFC 8998]
+                if (SignatureScheme.sm2sig_sm3 == signatureScheme)
+                {
+                    return new BcTlsSM2Signer(crypto, privKeyEC, signatureScheme);
+                }
 
                 if (SignatureScheme.isECDSA(signatureScheme))
                 {

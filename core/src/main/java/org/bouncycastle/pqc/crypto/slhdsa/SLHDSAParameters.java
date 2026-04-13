@@ -1,7 +1,18 @@
 package org.bouncycastle.pqc.crypto.slhdsa;
 
+/**
+ * @deprecated use org.bouncycastle.crypto.params.SLHDSAParameters
+ */
+@Deprecated
 public class SLHDSAParameters
 {
+    interface SLHDSAEngineProvider
+    {
+        int getN();
+
+        SLHDSAEngine get();
+    }
+
     public static final int TYPE_PURE = 0;
     public static final int TYPE_SHA2_256 = 1;
     public static final int TYPE_SHA2_512 = 2;

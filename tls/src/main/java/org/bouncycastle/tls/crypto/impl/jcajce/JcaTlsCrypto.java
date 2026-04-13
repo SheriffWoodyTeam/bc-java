@@ -575,15 +575,12 @@ public class JcaTlsCrypto
         case CryptoSignatureAlgorithm.rsa_pss_pss_sha256:
         case CryptoSignatureAlgorithm.rsa_pss_pss_sha384:
         case CryptoSignatureAlgorithm.rsa_pss_pss_sha512:
+        case CryptoSignatureAlgorithm.sm2:         // [RFC 8998]
             return true;
 
         // TODO[RFC 9189]
         case CryptoSignatureAlgorithm.gostr34102012_256:
         case CryptoSignatureAlgorithm.gostr34102012_512:
-
-        // TODO[RFC 8998]
-        case CryptoSignatureAlgorithm.sm2:
-
         default:
             return false;
         }
@@ -762,9 +759,6 @@ public class JcaTlsCrypto
         // TODO[RFC 9189]
         case SignatureAlgorithm.gostr34102012_256:
         case SignatureAlgorithm.gostr34102012_512:
-
-        // TODO[RFC 8998]
-//        case SignatureAlgorithm.sm2:
 
         default:
             return false;
@@ -1279,7 +1273,10 @@ public class JcaTlsCrypto
             switch (signatureScheme)
             {
             case SignatureScheme.sm2sig_sm3:
-                return Boolean.FALSE;
+            {
+                helper.createSignature("SM3withSM2");
+                return Boolean.TRUE;
+            }
 
             default:
             {
