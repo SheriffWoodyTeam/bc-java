@@ -24,6 +24,67 @@ public class Properties
      */
     public static final String EMULATE_ORACLE = "org.bouncycastle.emulate.oracle";
 
+    /**
+     * A PKCS12 file which does not require a password will normally throw an exception if a password
+     * is provided. Setting PKCS12_IGNORE_USELESS_PASSWD to "true" will result in the provider ignoring a
+     * password if one is provided and not required.
+     */
+    public static final String PKCS12_IGNORE_USELESS_PASSWD = "org.bouncycastle.pkcs12.ignore_useless_passwd";
+
+    /**
+     * If set, a PKCS12 file with a larger iteration count on PBE processing will rejected.
+     */
+    public static final String PKCS12_MAX_IT_COUNT = "org.bouncycastle.pkcs12.max_it_count";
+
+    /**
+     * Maximum time, in seconds, that a downloaded CRL is cached by the internal CrlCache used
+     * by the CertPath validator and X509RevocationChecker. When set to a positive value, cached
+     * entries are evicted whichever expires sooner: the configured TTL or the CRL's own
+     * {@code nextUpdate}. Default (or 0) preserves the legacy behaviour of evicting only when
+     * {@code nextUpdate} has passed.
+     */
+    public static final String X509_CRL_CACHE_TTL = "org.bouncycastle.x509.crl_cache_ttl";
+
+    /**
+     * If set to "true", the BC PKCS#12 KeyStore will additionally accept (on load only)
+     * SafeBags of type secretBag that use SunJCE's non-standard nested encoding —
+     * a SecretBag whose secretTypeId is pkcs8ShroudedKeyBag and whose secretValue is
+     * an EncryptedPrivateKeyInfo wrapping a PKCS#8 PrivateKeyInfo carrying the raw
+     * secret-key bytes. Off by default; the BC keystore always writes the standards
+     * compliant RFC 7292 sec. 4.2.5 form regardless.
+     */
+    public static final String PKCS12_ALLOW_SUN_SECRET_KEYS = "org.bouncycastle.pkcs12.allow_sun_secret_keys";
+
+    /**
+     * Effective bits-of-entropy assumed per real bit when the BC DRBG provider seeds for
+     * a 256-bit security level — used to compute the byte-oriented samples requested from
+     * the underlying entropy source. Defaults to 282 bits (about 0.9 effective bits per
+     * raw bit) and is rounded up to the next whole byte.
+     */
+    public static final String DRBG_EFFECTIVE_256BITS_ENTROPY = "org.bouncycastle.drbg.effective_256bits_entropy";
+
+    /**
+     * Fully-qualified name of an {@code EntropySourceProvider} class to use as the BC DRBG
+     * provider's seed source. When set, the named class is loaded reflectively and
+     * instantiated in place of the platform default. When unset, the BC DRBG falls back
+     * to the configured {@code securerandom.source} or its own background entropy thread.
+     */
+    public static final String DRBG_ENTROPY_SOURCE = "org.bouncycastle.drbg.entropysource";
+
+    /**
+     * If set to "true", the BC DRBG provider runs a background thread that samples the
+     * platform entropy source on a fixed schedule and feeds the DRBG, rather than
+     * blocking on a fresh sample at each reseed.
+     */
+    public static final String DRBG_ENTROPY_THREAD = "org.bouncycastle.drbg.entropy_thread";
+
+    /**
+     * Pause, in seconds, between background entropy-thread samples (see
+     * {@link #DRBG_ENTROPY_THREAD}). Parsed as an integer; absent or non-positive values
+     * use the implementation default.
+     */
+    public static final String DRBG_GATHER_PAUSE_SECS = "org.bouncycastle.drbg.gather_pause_secs";
+
     private Properties()
     {
     }

@@ -187,8 +187,12 @@ public class IETFUtils
     {
         X500NameTokenizer tokenizer = new X500NameTokenizer(token, '=');
 
-        String typeToken = nextToken(tokenizer, true);
-        String valueToken = nextToken(tokenizer, false);
+        String typeToken = tokenizer.nextToken();
+        if (typeToken == null || !tokenizer.hasMoreTokens())
+        {
+            throw new IllegalArgumentException("badly formatted directory string");
+        }
+        String valueToken = collectValueToken(tokenizer);
 
         ASN1ObjectIdentifier oid = builder.getStyle().attrNameToOID(typeToken.trim());
         String value = unescape(valueToken);
@@ -200,8 +204,12 @@ public class IETFUtils
     {
         X500NameTokenizer tokenizer = new X500NameTokenizer(token, '=');
 
-        String typeToken = nextToken(tokenizer, true);
-        String valueToken = nextToken(tokenizer, false);
+        String typeToken = tokenizer.nextToken();
+        if (typeToken == null || !tokenizer.hasMoreTokens())
+        {
+            throw new IllegalArgumentException("badly formatted directory string");
+        }
+        String valueToken = collectValueToken(tokenizer);
 
         ASN1ObjectIdentifier oid = style.attrNameToOID(typeToken.trim());
         String value = unescape(valueToken);
@@ -210,14 +218,14 @@ public class IETFUtils
         values.addElement(value);
     }
 
-    private static String nextToken(X500NameTokenizer tokenizer, boolean expectMoreTokens)
+    /**
+     * Consume the remaining input from an '='-separated tokenizer as the
+     * attributeValue. RFC 4514 sec. 3 allows unescaped '=' in stringchar, so
+     * only the FIRST '=' separates the attributeType from the attributeValue.
+     */
+    private static String collectValueToken(X500NameTokenizer tokenizer)
     {
-        String token = tokenizer.nextToken();
-        if (token == null || tokenizer.hasMoreTokens() != expectMoreTokens)
-        {
-            throw new IllegalArgumentException("badly formatted directory string");
-        }
-        return token;
+        return tokenizer.remaining();
     }
 
     private static String[] toValueArray(Vector values)

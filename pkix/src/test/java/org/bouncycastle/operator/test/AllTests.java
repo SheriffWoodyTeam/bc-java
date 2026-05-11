@@ -24,6 +24,7 @@ import org.bouncycastle.asn1.cryptopro.CryptoProObjectIdentifiers;
 import org.bouncycastle.asn1.eac.EACObjectIdentifiers;
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers;
 import org.bouncycastle.asn1.gnu.GNUObjectIdentifiers;
+import org.bouncycastle.asn1.iana.IANAObjectIdentifiers;
 import org.bouncycastle.asn1.kisa.KISAObjectIdentifiers;
 import org.bouncycastle.asn1.misc.MiscObjectIdentifiers;
 import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
@@ -47,6 +48,7 @@ import org.bouncycastle.crypto.params.MLKEMPrivateKeyParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.AlgorithmNameFinder;
 import org.bouncycastle.operator.DefaultAlgorithmNameFinder;
+import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.DefaultKemEncapsulationLengthProvider;
 import org.bouncycastle.operator.DefaultSignatureNameFinder;
 import org.bouncycastle.operator.KemEncapsulationLengthProvider;
@@ -480,6 +482,151 @@ public class AllTests
         Assert.assertEquals(new DEROctetString(Hex.decode("beef")), oaepParams.getPSourceAlgorithm().getParameters());
     }
 
+    /**
+     * github #721: BcRSAContentSignerBuilder and BcRSAContentVerifierProviderBuilder
+     * used to hardcode RSADigestSigner (PKCS#1 v1.5) regardless of the supplied
+     * signature algorithm OID, so passing an id-RSASSA-PSS sigAlgId produced
+     * PKCS#1 v1.5 bytes that no PSS verifier accepted. Exercise both directions
+     * and a JCE/Bc cross-check round-trip.
+     */
+    public void testRsaPssBcRoundTripIssue721()
+        throws Exception
+    {
+        if (Security.getProvider(BC) == null)
+        {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", BC);
+        kpg.initialize(2048);
+        java.security.KeyPair kp = kpg.generateKeyPair();
+
+        org.bouncycastle.crypto.params.AsymmetricKeyParameter privBc =
+            org.bouncycastle.crypto.util.PrivateKeyFactory.createKey(kp.getPrivate().getEncoded());
+        org.bouncycastle.asn1.x509.SubjectPublicKeyInfo spki =
+            org.bouncycastle.asn1.x509.SubjectPublicKeyInfo.getInstance(kp.getPublic().getEncoded());
+        org.bouncycastle.crypto.params.AsymmetricKeyParameter pubBc =
+            org.bouncycastle.crypto.util.PublicKeyFactory.createKey(spki);
+
+        // SHA-256 / MGF1+SHA-256 / saltLen=32 / trailerField=1
+        AlgorithmIdentifier sha256AlgId = new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256, DERNull.INSTANCE);
+        AlgorithmIdentifier sigAlgId = new AlgorithmIdentifier(
+            PKCSObjectIdentifiers.id_RSASSA_PSS,
+            new RSASSAPSSparams(
+                sha256AlgId,
+                new AlgorithmIdentifier(PKCSObjectIdentifiers.id_mgf1, sha256AlgId),
+                new org.bouncycastle.asn1.ASN1Integer(32),
+                RSASSAPSSparams.DEFAULT_TRAILER_FIELD));
+
+        byte[] msg = "the quick brown fox jumped over the lazy dog".getBytes();
+
+        // (1) Sign + verify using the lightweight Bc* path on both sides.
+        org.bouncycastle.operator.bc.BcRSAContentSignerBuilder bcSignerBuilder =
+            new org.bouncycastle.operator.bc.BcRSAContentSignerBuilder(sigAlgId, sha256AlgId);
+        org.bouncycastle.operator.ContentSigner bcSigner = bcSignerBuilder.build(privBc);
+        bcSigner.getOutputStream().write(msg);
+        bcSigner.getOutputStream().close();
+        byte[] bcSig = bcSigner.getSignature();
+
+        org.bouncycastle.operator.bc.BcRSAContentVerifierProviderBuilder bcVerifierBuilder =
+            new org.bouncycastle.operator.bc.BcRSAContentVerifierProviderBuilder(
+                new org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder());
+        org.bouncycastle.operator.ContentVerifier bcVerifier =
+            bcVerifierBuilder.build(pubBc).get(sigAlgId);
+        bcVerifier.getOutputStream().write(msg);
+        bcVerifier.getOutputStream().close();
+        assertTrue("Bc-signed RSA-PSS sig did not verify under Bc verifier",
+            bcVerifier.verify(bcSig));
+
+        // (2) Cross-check: a Bc-produced PSS sig should also validate under
+        //     the JCE verifier.
+        org.bouncycastle.operator.ContentVerifier jcaVerifier =
+            new org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder()
+                .setProvider(BC).build(spki).get(sigAlgId);
+        jcaVerifier.getOutputStream().write(msg);
+        jcaVerifier.getOutputStream().close();
+        assertTrue("Bc-signed RSA-PSS sig did not verify under JCE verifier",
+            jcaVerifier.verify(bcSig));
+
+        // (3) Reverse cross-check: a JCE-produced PSS sig should validate
+        //     under the Bc verifier.
+        java.security.spec.PSSParameterSpec pssSpec = new java.security.spec.PSSParameterSpec(
+            "SHA-256", "MGF1", new java.security.spec.MGF1ParameterSpec("SHA-256"), 32, 1);
+        org.bouncycastle.operator.ContentSigner jcaSigner =
+            new org.bouncycastle.operator.jcajce.JcaContentSignerBuilder("RSAPSS", pssSpec)
+                .setProvider(BC).build(kp.getPrivate());
+        jcaSigner.getOutputStream().write(msg);
+        jcaSigner.getOutputStream().close();
+        byte[] jcaSig = jcaSigner.getSignature();
+
+        org.bouncycastle.operator.ContentVerifier bcVerifier2 =
+            bcVerifierBuilder.build(pubBc).get(jcaSigner.getAlgorithmIdentifier());
+        bcVerifier2.getOutputStream().write(msg);
+        bcVerifier2.getOutputStream().close();
+        assertTrue("JCE-signed RSA-PSS sig did not verify under Bc verifier",
+            bcVerifier2.verify(jcaSig));
+    }
+
+    /**
+     * SHAKE256 used as both the content hash and the mask generation function
+     * inside an id-RSASSA-PSS RSASSA-PSS-params encoding (RFC 8702: SHAKE OID
+     * appears directly as the MGF AlgorithmIdentifier rather than wrapped in
+     * id-mgf1). SHAKEDigest implements Xof, and PSSSigner's maskGenerator
+     * branches on {@code mgfDigest instanceof Xof} to use the native
+     * variable-length output instead of MGF1.
+     */
+    public void testRsaPssBcShake256Issue721()
+        throws Exception
+    {
+        if (Security.getProvider(BC) == null)
+        {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", BC);
+        kpg.initialize(2048);
+        java.security.KeyPair kp = kpg.generateKeyPair();
+
+        org.bouncycastle.crypto.params.AsymmetricKeyParameter privBc =
+            org.bouncycastle.crypto.util.PrivateKeyFactory.createKey(kp.getPrivate().getEncoded());
+        org.bouncycastle.asn1.x509.SubjectPublicKeyInfo spki =
+            org.bouncycastle.asn1.x509.SubjectPublicKeyInfo.getInstance(kp.getPublic().getEncoded());
+        org.bouncycastle.crypto.params.AsymmetricKeyParameter pubBc =
+            org.bouncycastle.crypto.util.PublicKeyFactory.createKey(spki);
+
+        // SHAKE256 hash + SHAKE256 MGF + 64-byte salt + trailerField=1.
+        // Per RFC 8702 the MGF AlgorithmIdentifier is the SHAKE OID
+        // directly (not id-mgf1 with SHAKE inside); the SHAKE OIDs are
+        // parameterless (no DERNull).
+        AlgorithmIdentifier shake256AlgId = new AlgorithmIdentifier(NISTObjectIdentifiers.id_shake256);
+        AlgorithmIdentifier sigAlgId = new AlgorithmIdentifier(
+            PKCSObjectIdentifiers.id_RSASSA_PSS,
+            new RSASSAPSSparams(
+                shake256AlgId,
+                shake256AlgId,
+                new org.bouncycastle.asn1.ASN1Integer(64),
+                RSASSAPSSparams.DEFAULT_TRAILER_FIELD));
+
+        byte[] msg = "the quick brown fox jumped over the lazy dog".getBytes();
+
+        org.bouncycastle.operator.bc.BcRSAContentSignerBuilder bcSignerBuilder =
+            new org.bouncycastle.operator.bc.BcRSAContentSignerBuilder(sigAlgId, shake256AlgId);
+        org.bouncycastle.operator.ContentSigner bcSigner = bcSignerBuilder.build(privBc);
+        bcSigner.getOutputStream().write(msg);
+        bcSigner.getOutputStream().close();
+        byte[] bcSig = bcSigner.getSignature();
+
+        org.bouncycastle.operator.bc.BcRSAContentVerifierProviderBuilder bcVerifierBuilder =
+            new org.bouncycastle.operator.bc.BcRSAContentVerifierProviderBuilder(
+                new org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder());
+        org.bouncycastle.operator.ContentVerifier bcVerifier =
+            bcVerifierBuilder.build(pubBc).get(sigAlgId);
+        bcVerifier.getOutputStream().write(msg);
+        bcVerifier.getOutputStream().close();
+        assertTrue("Bc-signed RSA-PSS+SHAKE256 sig did not verify under Bc verifier",
+            bcVerifier.verify(bcSig));
+    }
+
     public void testDefaultKemEncapsulationLengthProvider()
     {
         KemEncapsulationLengthProvider lengthProvider = new DefaultKemEncapsulationLengthProvider();
@@ -570,6 +717,50 @@ public class AllTests
             HQCKEMExtractor ext = new HQCKEMExtractor((HQCPrivateKeyParameters)kp.getPrivate());
 
             assertEquals(ext.getEncapsulationLength(), lengthProvider.getEncapsulationLength(new AlgorithmIdentifier(hqcOids[i])));
+        }
+    }
+
+    public void testCompositeMLDsaDigestLookupIssue1767()
+    {
+        DefaultDigestAlgorithmIdentifierFinder f = new DefaultDigestAlgorithmIdentifierFinder();
+
+        // Unknown sig OID must return null, not throw NPE("digest OID is null").
+        assertNull(f.find(new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.3.4.5.6.7.8.9"))));
+
+        // BC-namespaced composite OIDs aren't mapped: also null, not NPE.
+        assertNull(f.find(new AlgorithmIdentifier(BCObjectIdentifiers.id_MLDSA44_RSA2048_PSS_SHA256)));
+
+        // IANA composite OIDs must return the per-scheme prehash that matches what
+        // the composite SignatureSpi feeds the inner signers (the OID name suffix).
+        Object[][] expected = new Object[][]
+        {
+            { IANAObjectIdentifiers.id_MLDSA44_RSA2048_PSS_SHA256,        NISTObjectIdentifiers.id_sha256 },
+            { IANAObjectIdentifiers.id_MLDSA44_RSA2048_PKCS15_SHA256,     NISTObjectIdentifiers.id_sha256 },
+            { IANAObjectIdentifiers.id_MLDSA44_Ed25519_SHA512,            NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA44_ECDSA_P256_SHA256,         NISTObjectIdentifiers.id_sha256 },
+            { IANAObjectIdentifiers.id_MLDSA65_RSA3072_PSS_SHA512,        NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA65_RSA3072_PKCS15_SHA512,     NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA65_RSA4096_PSS_SHA512,        NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA65_RSA4096_PKCS15_SHA512,     NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA65_ECDSA_P256_SHA512,         NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA65_ECDSA_P384_SHA512,         NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA65_ECDSA_brainpoolP256r1_SHA512, NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA65_Ed25519_SHA512,            NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA87_ECDSA_P384_SHA512,         NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA87_ECDSA_brainpoolP384r1_SHA512, NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA87_Ed448_SHAKE256,            NISTObjectIdentifiers.id_shake256 },
+            { IANAObjectIdentifiers.id_MLDSA87_RSA3072_PSS_SHA512,        NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA87_RSA4096_PSS_SHA512,        NISTObjectIdentifiers.id_sha512 },
+            { IANAObjectIdentifiers.id_MLDSA87_ECDSA_P521_SHA512,         NISTObjectIdentifiers.id_sha512 },
+        };
+        for (int i = 0; i != expected.length; ++i)
+        {
+            ASN1ObjectIdentifier sigOid = (ASN1ObjectIdentifier)expected[i][0];
+            ASN1ObjectIdentifier expDig = (ASN1ObjectIdentifier)expected[i][1];
+            AlgorithmIdentifier got = f.find(new AlgorithmIdentifier(sigOid));
+            assertNotNull("missing mapping for " + sigOid.getId(), got);
+            assertEquals("wrong digest for " + sigOid.getId(),
+                expDig, got.getAlgorithm());
         }
     }
 }
