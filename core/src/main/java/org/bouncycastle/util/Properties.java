@@ -56,6 +56,38 @@ public class Properties
     public static final String PKCS12_ALLOW_SUN_SECRET_KEYS = "org.bouncycastle.pkcs12.allow_sun_secret_keys";
 
     /**
+     * If set to "true", RSA PKCS#1 v1.5 signature verification rejects DigestInfo
+     * encodings whose AlgorithmIdentifier omits the {@code NULL} parameters octets
+     * required by RFC 8017 sec. 9.2 / Appendix A.2.4. By default (or "false") the
+     * verifier falls back to accepting that two-byte-shorter encoding for compatibility
+     * with implementations that have historically produced it; setting this property
+     * to "true" disables the fallback so only strictly RFC-compliant signatures verify
+     * (github #2273). Affects both the BC JCE provider's
+     * {@code DigestSignatureSpi} and the lightweight {@code RSADigestSigner}.
+     */
+    public static final String PKCS1_STRICT_DIGESTINFO = "org.bouncycastle.pkcs1.strict_digestinfo";
+
+    /**
+     * Opt-in to the legacy "use the subject CN as a fallback identifier" behaviour
+     * in the BC JSSE provider's hostname verifier. When the property is set to
+     * "true", a TLS server certificate that carries no SAN dNSName entries falls
+     * back to the most specific {@code commonName} attribute of the subject DN —
+     * this matches SunJSSE and historical OpenSSL behaviour.
+     * <p>
+     * Default ("false" / unset) follows RFC 9525 sec. 6.3 (which deprecates CN-based
+     * identity for TLS) and CAB Forum Baseline Requirements 7.1.4.2 (which requires
+     * SAN dNSName entries for publicly-trusted TLS server certs). It also closes a
+     * Name-Constraint bypass surface (the 2026-03 cross-implementation X.509 audit):
+     * a constrained intermediate CA can omit dNSName SAN entries entirely so the
+     * path validator's Name-Constraint dNSName checks never fire, then embed an
+     * attacker-controlled hostname in CN — the JSSE verifier would have accepted
+     * the connection. Setting the property "false" (or leaving it unset) disables
+     * this fallback path and the JSSE verifier rejects any cert that doesn't carry
+     * a matching SAN identifier.
+     */
+    public static final String JSSE_HOSTNAME_CHECK_CN_FALLBACK = "org.bouncycastle.jsse.hostname_check_cn_fallback";
+
+    /**
      * Effective bits-of-entropy assumed per real bit when the BC DRBG provider seeds for
      * a 256-bit security level — used to compute the byte-oriented samples requested from
      * the underlying entropy source. Defaults to 282 bits (about 0.9 effective bits per

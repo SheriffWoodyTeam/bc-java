@@ -278,6 +278,8 @@ public class BCStyle
         DefaultLookUp.put("unstructuredname", UnstructuredName);
         DefaultLookUp.put("uniqueidentifier", UNIQUE_IDENTIFIER);
         DefaultLookUp.put("dn", DN_QUALIFIER);
+        DefaultLookUp.put("dnq", DN_QUALIFIER);
+        DefaultLookUp.put("dnqualifier", DN_QUALIFIER);
         DefaultLookUp.put("pseudonym", PSEUDONYM);
         DefaultLookUp.put("postaladdress", POSTAL_ADDRESS);
         DefaultLookUp.put("nameatbirth", NAME_AT_BIRTH);
@@ -336,6 +338,18 @@ public class BCStyle
                     + value.length() + ": '" + value + "'");
             }
             return new DERPrintableString(value);
+        }
+        else if (oid.equals(CN) && value.length() > 64)
+        {
+            // RFC 5280 sec. A.1 / X.520: commonName is DirectoryString
+            // { ub-common-name } with ub-common-name = 64. OpenSSL and most
+            // validators reject longer values, so reject at build time
+            // rather than emit a cert that won't verify downstream.
+            // Existing DER-encoded names with longer CNs still parse
+            // because the parse path does not route through this method
+            // (github #750).
+            throw new IllegalArgumentException("commonName length "
+                + value.length() + " exceeds RFC 5280 ub-common-name (64): '" + value + "'");
         }
 
         return super.encodeStringValue(oid, value);

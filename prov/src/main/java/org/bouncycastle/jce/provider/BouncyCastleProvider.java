@@ -32,6 +32,7 @@ import org.bouncycastle.pqc.asn1.PQCObjectIdentifiers;
 import org.bouncycastle.pqc.jcajce.provider.bike.BIKEKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.cmce.CMCEKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.dilithium.DilithiumKeyFactorySpi;
+import org.bouncycastle.pqc.jcajce.provider.faest.FaestKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.falcon.FalconKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.hqc.HQCKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.kyber.KyberKeyFactorySpi;
@@ -76,7 +77,7 @@ public final class BouncyCastleProvider extends Provider
 {
     private static final Logger LOG = Logger.getLogger(BouncyCastleProvider.class.getName());
 
-    private static String info = "BouncyCastle Security Provider v1.85b";
+    private static String info = "BouncyCastle Security Provider v1.85-SNAPSHOT";
 
     public static final String PROVIDER_NAME = "BC";
 
@@ -496,6 +497,19 @@ public final class BouncyCastleProvider extends Provider
         addKeyInfoConverter(BCObjectIdentifiers.snova_75_33_2_esk, new SnovaKeyFactorySpi());
         addKeyInfoConverter(BCObjectIdentifiers.snova_75_33_2_shake_ssk, new SnovaKeyFactorySpi());
         addKeyInfoConverter(BCObjectIdentifiers.snova_75_33_2_shake_esk, new SnovaKeyFactorySpi());
+
+        addKeyInfoConverter(BCObjectIdentifiers.faest_128s, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_128f, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_192s, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_192f, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_256s, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_256f, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_em_128s, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_em_128f, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_em_192s, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_em_192f, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_em_256s, new FaestKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.faest_em_256f, new FaestKeyFactorySpi());
     }
 
     public void setParameter(String parameterName, Object parameter)

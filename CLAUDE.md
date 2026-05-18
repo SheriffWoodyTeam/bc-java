@@ -13,7 +13,13 @@ The build is Gradle multi-module. JDK 21+ is required to drive Gradle. Optional 
 ./gradlew -PexcludeTests=<glob> :prov:test           # exclude pattern
 ```
 
-`bc-test-data` (separate repo `bcgit/bc-test-data`) must be checked out as a sibling of `bc-java` for the full suite to pass; the Gradle property `bcTestDataHome` defaults to `core/src/test/data`.
+`bc-test-data` (separate repo `bcgit/bc-test-data`) must be checked out for the full suite to pass. `TestResourceFinder.findTestResource(homeDir, fileName)` (six per-module copies under `<module>/src/test/java/org/bouncycastle/test/`) resolves the bc-test-data root in this order:
+
+1. The system property `bc.test.data.home`, if set.
+2. The environment variable `BC_TEST_DATA_HOME`, if set.
+3. Walk up from the working directory looking for a directory literally named `bc-test-data` — the default that makes `./gradlew :prov:test` work when bc-test-data is checked out as a sibling of `bc-java`.
+
+When the property or environment variable is supplied, the named path is required to exist; a mistyped value fails fast with a `FileNotFoundException` naming both the source (`-Dbc.test.data.home` or `$BC_TEST_DATA_HOME`) and the bad path, rather than silently falling through. The Gradle build no longer sets the property itself; supply `-Dbc.test.data.home=/path/to/bc-test-data` (or export `BC_TEST_DATA_HOME` once in your shell) only when the sibling-checkout convention doesn't fit your layout. Direct `java -cp ... junit.textui.TestRunner ...` invocations follow the same rule.
 
 ### Running an individual test fast
 
@@ -36,14 +42,16 @@ java -cp pkix/build/classes/java/main:pkix/build/classes/java/test:pkix/src/test
         util/build/classes/java/main:\
         $(find ~/.gradle -name 'junit-*.jar' | head -1):\
         $(find ~/.gradle -name 'hamcrest-core-1*.jar' | head -1) \
-     -Dbc.test.data.home=core/src/test/data \
      org.bouncycastle.openssl.test.ParserTest
 ```
+
+If your bc-test-data checkout isn't a sibling of `bc-java`, add `-Dbc.test.data.home=/abs/path/to/bc-test-data` to the command. Otherwise the walk-up search picks it up automatically.
 
 Common gotchas:
 - `*/build/resources/main` directories are required — some tests pull resource files (e.g. `lowmcL1.bin.properties` for Picnic, GOST tables) that fail with cryptic `NullPointerException` if missing.
 - `prov/src/test/resources` and `core/src/test/resources` carry test fixtures referenced by `TestResourceFinder` and direct classpath lookups.
 - IDE-built classes under `out/production/...` (IntelliJ) are NOT on the Gradle classpath — don't reference them, and beware that they can drift from Gradle's outputs.
+- After deleting or renaming a test method (e.g. when rolling back an edit), the stale `.class` file lingers under `<module>/build/classes/java/test/`. JUnit's `TestSuite.class` reflection-walk will still find and run the stale method, surfacing confusing `ClassNotFoundException` / `NoClassDefFoundError` for inner-class artifacts that were removed. Run `./gradlew :<module>:compileTestJava --rerun-tasks` (or `:<module>:clean`) after a rollback to flush.
 
 ### Verifying a fix actually catches the bug
 
@@ -104,6 +112,49 @@ When moving existing example code into `misc/`, remember to drop any matching `e
 
 `BouncyCastleProvider` (in `prov`) registers algorithms by string name through `ConfigurableProvider.addAlgorithm("Cipher.SM2", "...GMCipherSpi$SM2")` etc. Per-algorithm registration code lives in `prov/src/main/java/org/bouncycastle/jcajce/provider/{asymmetric,symmetric,digest,keystore,...}/<Family>.java`. The corresponding `*Spi` classes (CipherSpi, KeyFactorySpi, KeyPairGeneratorSpi, etc.) are siblings under the same package. When adding or fixing a JCE-visible behaviour, the registration `Family.java` is the entry point; the underlying lightweight engine usually lives in `core/src/main/java/org/bouncycastle/crypto/engines/`.
 
+### Adding a PQC algorithm: BCPQC ≠ BC, but BC needs the OID table too
+
+PQC algorithms live in a second provider, `BouncyCastlePQCProvider` (`BCPQC`), separate from `BouncyCastleProvider` (`BC`). The two providers have independent service tables. A new algorithm wired only into `BCPQC` will be reachable through `*.getInstance(name, "BCPQC")` calls and matching MR-jar / module-info exports, but it will NOT be recognised when a `X.509 CertificateFactory` / `KeyFactory` / etc. is obtained from the standard `BC` provider — which is the much more common path in caller code, because most BC-using applications add only `BouncyCastleProvider`.
+
+The bridge is `BouncyCastleProvider.loadPQCKeys()` in `prov/src/main/java/org/bouncycastle/jce/provider/BouncyCastleProvider.java`. It is called from the `BouncyCastleProvider` constructor and registers an `AsymmetricKeyInfoConverter` (typically the BCPQC-side `KeyFactorySpi`) against every PQC OID via `addKeyInfoConverter(OID, new <Pqc>KeyFactorySpi())`. The `BC` provider's certificate / PKCS#8 / SubjectPublicKeyInfo parsing then routes unknown OIDs through this converter table — so a `CertificateFactory.getInstance("X.509", "BC")` can extract and decode a FAEST / Snova / Mayo / etc. public key even though the actual algorithm is implemented in BCPQC.
+
+Practical checklist when porting a new PQC algorithm — easy to leave any of these out and end up with a half-wired addition:
+
+- `core/src/main/java/org/bouncycastle/asn1/bc/BCObjectIdentifiers.java` (or `NISTObjectIdentifiers.java` for NIST-standardised schemes) — one OID per parameter set.
+- `core/src/main/java/org/bouncycastle/pqc/crypto/<alg>/` — lightweight classes: `*Parameters`, `*PublicKeyParameters`, `*PrivateKeyParameters`, `*KeyGenerationParameters`, `*KeyPairGenerator`, `*Signer` (or KEM equivalents).
+- `core/src/main/java/org/bouncycastle/pqc/crypto/util/Utils.java` — `<alg>Oids` / `<alg>Params` maps plus `<alg>OidLookup` / `<alg>ParamsLookup` helpers.
+- `core/src/main/java/org/bouncycastle/pqc/crypto/util/PublicKeyFactory.java` — `<Alg>Converter` inner class + one `converters.put(oid, new <Alg>Converter())` per OID.
+- `core/src/main/java/org/bouncycastle/pqc/crypto/util/PrivateKeyFactory.java` — `else if (algOID.on(BCObjectIdentifiers.<alg>))` branch.
+- `core/src/main/java/org/bouncycastle/pqc/crypto/util/SubjectPublicKeyInfoFactory.java` and `PrivateKeyInfoFactory.java` — `instanceof <Alg>PublicKeyParameters` / `<Alg>PrivateKeyParameters` branches.
+- `prov/src/main/java/org/bouncycastle/pqc/jcajce/spec/<Alg>ParameterSpec.java` — `AlgorithmParameterSpec` with one constant per parameter set + `fromName(String)` lookup.
+- `prov/src/main/java/org/bouncycastle/pqc/jcajce/interfaces/<Alg>Key.java` — `extends Key` with `getParameterSpec()`.
+- `prov/src/main/java/org/bouncycastle/pqc/jcajce/provider/<alg>/` — `BC<Alg>PublicKey` (use `Arrays.areEqual`) and `BC<Alg>PrivateKey` (use `Arrays.constantTimeAreEqual` in `equals()` for the secret-bearing path), `<Alg>KeyFactorySpi`, `<Alg>KeyPairGeneratorSpi`, `SignatureSpi` (or KEM equivalents) — each with one inner subclass per parameter set.
+- `prov/src/main/java/org/bouncycastle/pqc/jcajce/provider/<Alg>.java` — `Mappings` extending `AsymmetricAlgorithmProvider`, calling `addKeyFactoryAlgorithm` / `addKeyPairGeneratorAlgorithm` / `addSignatureAlgorithm` for each parameter set.
+- `prov/.../jcajce/provider/BouncyCastlePQCProvider.java` — add `"<Alg>"` to `ALGORITHMS`.
+- `prov/.../jce/provider/BouncyCastleProvider.java` — in `loadPQCKeys()`, `addKeyInfoConverter(BCObjectIdentifiers.<alg>_<param>, new <Alg>KeyFactorySpi())` for every OID. **This is the BCPQC→BC bridge; skip it and certs / PKCS#8 work fine through BCPQC but break through BC.** Test it.
+- `prov/src/main/jdk1.9/module-info.java` — `opens org.bouncycastle.pqc.jcajce.provider.<alg> to java.base;` plus `exports org.bouncycastle.pqc.crypto.<alg>;` plus `exports org.bouncycastle.pqc.jcajce.provider.<alg>;`. Mirror `pqc.crypto.<alg>` into `prov/src/main/ext-jdk1.9/module-info.java` (the legacy distribution does not export the JCE-side `provider.<alg>` packages).
+- Tests in `prov/src/test/java/org/bouncycastle/pqc/jcajce/provider/test/<Alg>Test.java` plus an entry in `AllTests.java`. Include a `testBcProviderKeyInfoConverter`-style case that exercises `BouncyCastleProvider.getPublicKey(SubjectPublicKeyInfo)` and `getPrivateKey(PrivateKeyInfo)` against every parameter set, proving the `loadPQCKeys()` registration works.
+- `docs/releasenotes.html` — one `<li>` under the current unreleased version's "Additional Features and Functionality" block.
+
+### Package layering: `.bc` (lightweight) vs `.jcajce` (JCA/JCE)
+
+The high-level modules (`pkix`, `pg`, `mail`/`jmail`, `tls`, `mls`) split their public surface by which low-level crypto stack a class touches:
+
+- **`.bc` subpackages** — lightweight implementations using `org.bouncycastle.crypto.*` engines / signers / digests directly. Examples: `org.bouncycastle.cms.bc`, `org.bouncycastle.openpgp.bc`, `org.bouncycastle.operator.bc`.
+- **`.jcajce` subpackages** — JCA/JCE implementations that call `java.security.*` / `javax.crypto.*` classes (typically through a `JcaJceHelper` so the provider is overridable). Examples: `org.bouncycastle.cms.jcajce`, `org.bouncycastle.openpgp.operator.jcajce`, `org.bouncycastle.operator.jcajce`.
+- **Top-level packages** (e.g. `org.bouncycastle.cms`, `org.bouncycastle.openpgp`, `org.bouncycastle.cades`, `org.bouncycastle.cert`) — JCA-free abstractions. They may take `DigestCalculatorProvider` / `ContentSigner` / `X509CertificateHolder` etc., but must not import `java.security.MessageDigest`, `java.security.Signature`, `javax.crypto.Cipher`, or `java.security.cert.X509Certificate`.
+
+The only JCA class allowed to be referenced from a non-`.jcajce` package is `java.security.SecureRandom`. Everything else must be in a `.jcajce` package.
+
+Practical implications when adding code:
+
+- Need an algorithm digest in a top-level utility? Take a `DigestCalculatorProvider` parameter and call `provider.get(algId).getOutputStream().write(...)` — never `MessageDigest.getInstance(...)`.
+- Need to verify a signature in a top-level utility? Take a `SignerInfoVerifier` (or similar operator) — never `Signature.getInstance(...)`.
+- Need to wrap an existing `Jca*` builder? Either (a) wrap the JCA-free parent (e.g. wrap `SignerInfoGeneratorBuilder` instead of `JcaSignerInfoGeneratorBuilder`) so the class can stay at the top, or (b) move the class into the `.jcajce` subpackage.
+- A top-level class that does need to expose a JCA-friendly factory method should ship the factory in its `.jcajce` peer instead of pulling JCA into the top package.
+
+The rule applies uniformly to `pkix` (`cms`, `cades`, `tsp`, `cert`, `operator`, ...), `pg`, `mail`/`jmail`, `tls`, and `mls`. When adding a new package under any of these modules, decide on the split up-front: if any class needs `java.security` / `javax.crypto` beyond `SecureRandom`, the package should be a `.jcajce` subpackage, with a JCA-free top-level parent if appropriate.
+
 ### Test conventions
 
 - Most tests extend `org.bouncycastle.util.test.SimpleTest` (not JUnit). They override `performTest()` and call `fail(msg)` / `isTrue(msg, cond)` / `areEqual(a, b)`. They are *not* discovered by Gradle directly — they're invoked from JUnit `AllTests` / `RegressionTest` wrappers.
@@ -139,6 +190,12 @@ When supporting a non-standard wire encoding for interop with another implementa
 ### PKCS#12 SPI pair
 
 The PKCS#12 keystore comes in two SPI flavours that share the bag-handling pipeline: `PKCS12KeyStoreSpi` (legacy MAC) and `PKCS12PBMAC1KeyStoreSpi` (RFC 9579 PBMAC1). When changing entry-type acceptance, bag dispatch in `engineLoad`, the cert/key write passes in `engineStore`, or the `getUsedCertificateSet` / `cryptData` helpers, the change usually needs mirroring in the other SPI. Shared static helpers — algorithm-OID lookup, key-size table, content/iteration-count helpers — live in the package-private `org.bouncycastle.jcajce.provider.keystore.pkcs12.PKCS12Util` so both SPIs can call them without one having to fully-qualify the other; new helpers should land there too rather than as static methods on either SPI.
+
+### CMS streaming I/O: caller owns the outer stream
+
+The streaming classes under `pkix/src/main/java/org/bouncycastle/cms/CMS*{Parser,StreamGenerator}.java` deliberately do **not** cascade close to caller-supplied streams, unlike `GZIPOutputStream` / `CipherOutputStream`. Stream generators finalize the CMS structure on `close()` of the returned `OutputStream` (writes signer infos, MAC, end-of-contents markers) but do not close the target `OutputStream` — if the target is a buffering encoder whose tail state only flushes on close (e.g. Apache Commons `Base64OutputStream`), the caller has to close it themselves. Parsers read only enough of the supplied `InputStream` to expose CMS metadata; encapsulated content drains lazily through `getContentStream()` / `getSignedContent()`, and the `InputStream` is closed only when the caller invokes `parser.close()` (inherited from `CMSContentInfoParser`). This convention is long-standing — changing it has been explicitly rejected (github #1572).
+
+When updating CMS class-level javadoc, verify by tracing rather than paraphrasing aspirational behaviour: between Aug–Dec 2025 the `CMSAuthEnvelopedDataParser` doc claimed the constructor "fully drains and closes" the InputStream and that "plaintext content is buffered in memory" — both were wrong (the constructor reads ~84% of the input, no buffering happens), and the doc was corrected as part of github #2133. The model `<b>Stream handling note:</b>` blocks added across the package under that issue are the template to follow.
 
 ### Two locations for the same OID-table class
 
