@@ -33,6 +33,7 @@ import org.bouncycastle.pqc.jcajce.provider.bike.BIKEKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.cmce.CMCEKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.dilithium.DilithiumKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.faest.FaestKeyFactorySpi;
+import org.bouncycastle.pqc.jcajce.provider.hawk.HawkKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.falcon.FalconKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.hqc.HQCKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.kyber.KyberKeyFactorySpi;
@@ -41,7 +42,9 @@ import org.bouncycastle.pqc.jcajce.provider.mayo.MayoKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.newhope.NHKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.ntru.NTRUKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.picnic.PicnicKeyFactorySpi;
+import org.bouncycastle.pqc.jcajce.provider.mqom.MQOMKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.snova.SnovaKeyFactorySpi;
+import org.bouncycastle.pqc.jcajce.provider.uov.UOVKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.sphincs.Sphincs256KeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.sphincsplus.SPHINCSPlusKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.xmss.XMSSKeyFactorySpi;
@@ -510,6 +513,60 @@ public final class BouncyCastleProvider extends Provider
         addKeyInfoConverter(BCObjectIdentifiers.faest_em_192f, new FaestKeyFactorySpi());
         addKeyInfoConverter(BCObjectIdentifiers.faest_em_256s, new FaestKeyFactorySpi());
         addKeyInfoConverter(BCObjectIdentifiers.faest_em_256f, new FaestKeyFactorySpi());
+
+        addKeyInfoConverter(BCObjectIdentifiers.uov_Is_classic,   new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_Is_pkc,       new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_Is_pkc_skc,   new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_Ip_classic,   new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_Ip_pkc,       new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_Ip_pkc_skc,   new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_III_classic,  new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_III_pkc,      new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_III_pkc_skc,  new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_V_classic,    new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_V_pkc,        new UOVKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.uov_V_pkc_skc,    new UOVKeyFactorySpi());
+
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf2_fast_r3,     new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf2_fast_r5,     new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf2_short_r3,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf2_short_r5,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf16_fast_r3,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf16_fast_r5,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf16_short_r3,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf16_short_r5,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf256_fast_r3,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf256_fast_r5,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf256_short_r3,  new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat1_gf256_short_r5,  new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf2_fast_r3,     new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf2_fast_r5,     new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf2_short_r3,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf2_short_r5,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf16_fast_r3,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf16_fast_r5,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf16_short_r3,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf16_short_r5,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf256_fast_r3,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf256_fast_r5,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf256_short_r3,  new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat3_gf256_short_r5,  new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf2_fast_r3,     new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf2_fast_r5,     new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf2_short_r3,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf2_short_r5,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf16_fast_r3,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf16_fast_r5,    new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf16_short_r3,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf16_short_r5,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf256_fast_r3,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf256_fast_r5,   new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf256_short_r3,  new MQOMKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.mqom2_cat5_gf256_short_r5,  new MQOMKeyFactorySpi());
+
+        addKeyInfoConverter(BCObjectIdentifiers.hawk256,  new HawkKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.hawk512,  new HawkKeyFactorySpi());
+        addKeyInfoConverter(BCObjectIdentifiers.hawk1024, new HawkKeyFactorySpi());
     }
 
     public void setParameter(String parameterName, Object parameter)

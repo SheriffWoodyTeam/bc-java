@@ -8,6 +8,8 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.pqc.crypto.mqom.MQOMPublicKeyParameters;
+import org.bouncycastle.pqc.crypto.uov.UOVPublicKeyParameters;
 import org.bouncycastle.internal.asn1.isara.IsaraObjectIdentifiers;
 import org.bouncycastle.pqc.asn1.PQCObjectIdentifiers;
 import org.bouncycastle.pqc.asn1.SPHINCS256KeyParams;
@@ -20,6 +22,7 @@ import org.bouncycastle.pqc.crypto.crystals.dilithium.DilithiumPublicKeyParamete
 import org.bouncycastle.pqc.crypto.faest.FaestPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.falcon.FalconPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.frodo.FrodoPublicKeyParameters;
+import org.bouncycastle.pqc.crypto.hawk.HawkPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.hqc.HQCPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.lms.Composer;
 import org.bouncycastle.pqc.crypto.lms.HSSPublicKeyParameters;
@@ -309,12 +312,33 @@ public class SubjectPublicKeyInfoFactory
             AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.ntruPlusOidLookup(params.getParameters()));
             return new SubjectPublicKeyInfo(algorithmIdentifier, new DEROctetString(encoding));
         }
+        else if (publicKey instanceof HawkPublicKeyParameters)
+        {
+            HawkPublicKeyParameters params = (HawkPublicKeyParameters)publicKey;
+            byte[] encoding = params.getEncoded();
+            AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.hawkOidLookup(params.getParameters()));
+            return new SubjectPublicKeyInfo(algorithmIdentifier, new DEROctetString(encoding));
+        }
         else if (publicKey instanceof FaestPublicKeyParameters)
         {
             FaestPublicKeyParameters params = (FaestPublicKeyParameters)publicKey;
             byte[] encoding = params.getEncoded();
             AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.faestOidLookup(params.getParameters()));
             return new SubjectPublicKeyInfo(algorithmIdentifier, new DEROctetString(encoding));
+        }
+        else if (publicKey instanceof MQOMPublicKeyParameters)
+        {
+            MQOMPublicKeyParameters params = (MQOMPublicKeyParameters)publicKey;
+
+            AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.mqomOidLookup(params.getParameters()));
+            return new SubjectPublicKeyInfo(algorithmIdentifier, params.getEncoded());
+        }
+        else if (publicKey instanceof UOVPublicKeyParameters)
+        {
+            UOVPublicKeyParameters params = (UOVPublicKeyParameters)publicKey;
+
+            AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.uovOidLookup(params.getParameters()));
+            return new SubjectPublicKeyInfo(algorithmIdentifier, params.getEncoded());
         }
         else
         {

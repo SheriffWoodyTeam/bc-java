@@ -12,6 +12,8 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.pqc.crypto.mqom.MQOMPrivateKeyParameters;
+import org.bouncycastle.pqc.crypto.uov.UOVPrivateKeyParameters;
 import org.bouncycastle.pqc.asn1.CMCEPrivateKey;
 import org.bouncycastle.pqc.asn1.CMCEPublicKey;
 import org.bouncycastle.pqc.asn1.FalconPrivateKey;
@@ -28,6 +30,7 @@ import org.bouncycastle.pqc.crypto.crystals.dilithium.DilithiumPublicKeyParamete
 import org.bouncycastle.pqc.crypto.faest.FaestPrivateKeyParameters;
 import org.bouncycastle.pqc.crypto.falcon.FalconPrivateKeyParameters;
 import org.bouncycastle.pqc.crypto.frodo.FrodoPrivateKeyParameters;
+import org.bouncycastle.pqc.crypto.hawk.HawkPrivateKeyParameters;
 import org.bouncycastle.pqc.crypto.hqc.HQCPrivateKeyParameters;
 import org.bouncycastle.pqc.crypto.lms.Composer;
 import org.bouncycastle.pqc.crypto.lms.HSSPrivateKeyParameters;
@@ -349,6 +352,29 @@ public class PrivateKeyInfoFactory
             AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.faestOidLookup(params.getParameters()));
             byte[] encoding = params.getEncoded();
             return new PrivateKeyInfo(algorithmIdentifier, new DEROctetString(encoding), attributes);
+        }
+        else if (privateKey instanceof HawkPrivateKeyParameters)
+        {
+            HawkPrivateKeyParameters params = (HawkPrivateKeyParameters)privateKey;
+            AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.hawkOidLookup(params.getParameters()));
+            byte[] encoding = params.getEncoded();
+            return new PrivateKeyInfo(algorithmIdentifier, new DEROctetString(encoding), attributes);
+        }
+        else if (privateKey instanceof MQOMPrivateKeyParameters)
+        {
+            MQOMPrivateKeyParameters params = (MQOMPrivateKeyParameters)privateKey;
+
+            AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.mqomOidLookup(params.getParameters()));
+
+            return new PrivateKeyInfo(algorithmIdentifier, params.getEncoded(), attributes);
+        }
+        else if (privateKey instanceof UOVPrivateKeyParameters)
+        {
+            UOVPrivateKeyParameters params = (UOVPrivateKeyParameters)privateKey;
+
+            AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Utils.uovOidLookup(params.getParameters()));
+
+            return new PrivateKeyInfo(algorithmIdentifier, params.getEncoded(), attributes);
         }
         else
         {
