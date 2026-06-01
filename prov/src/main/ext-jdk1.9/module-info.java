@@ -128,8 +128,12 @@ module org.bouncycastle.provider
     exports org.bouncycastle.pqc.crypto.saber;
     exports org.bouncycastle.pqc.crypto.sphincs;
     exports org.bouncycastle.pqc.legacy.sphincsplus;
+    exports org.bouncycastle.pqc.crypto.sdith;
     exports org.bouncycastle.pqc.crypto.snova;
     exports org.bouncycastle.pqc.crypto.faest;
+    exports org.bouncycastle.pqc.crypto.qruov;
+    exports org.bouncycastle.pqc.crypto.sqisign;
+    exports org.bouncycastle.pqc.crypto.haetae;
     exports org.bouncycastle.pqc.crypto.hawk;
     exports org.bouncycastle.pqc.crypto.mqom;
     exports org.bouncycastle.pqc.crypto.uov;

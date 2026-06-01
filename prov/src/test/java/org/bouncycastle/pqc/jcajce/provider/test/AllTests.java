@@ -78,9 +78,13 @@ public class AllTests
         suite.addTestSuite(MayoKeyPairGeneratorTest.class);
         suite.addTestSuite(MayoTest.class);
         suite.addTestSuite(SnovaTest.class);
+        suite.addTestSuite(SDitHTest.class);
         suite.addTestSuite(FaestTest.class);
+        suite.addTestSuite(QRUOVTest.class);
+        suite.addTestSuite(HaetaeTest.class);
         suite.addTestSuite(UOVTest.class);
         suite.addTestSuite(MQOMTest.class);
+        suite.addTestSuite(SQIsignTest.class);
         suite.addTestSuite(HawkTest.class);
 
         return new BCTestSetup(suite);
