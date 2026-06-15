@@ -147,6 +147,72 @@ public class Properties
      */
     public static final String ASN1_ALLOW_NON_DER_TIME = "org.bouncycastle.asn1.allow_non_der_time";
 
+    /**
+     * Upper bound (in bits) on the prime modulus p accepted when validating an imported
+     * Diffie-Hellman public key. Validation performs a modular exponentiation / Legendre
+     * computation whose cost is super-linear in the size of p, so an unbounded p taken from a
+     * crafted key encoding would turn key import into a CPU-exhaustion denial of service. The
+     * default (16384) is the analogue of {@code org.bouncycastle.rsa.max_size} and is well above
+     * any standardised DH group. Read via {@link #asInteger(String, int)}.
+     */
+    public static final String DH_MAX_SIZE = "org.bouncycastle.dh.max_size";
+
+    /**
+     * Upper bound (in bits) on the prime modulus p accepted when validating an imported DSA
+     * public key. As with {@link #DH_MAX_SIZE}, validation runs a modular exponentiation whose
+     * cost grows super-linearly in the size of p, so an unbounded p from a crafted encoding is an
+     * import-time CPU-exhaustion vector. Default 16384. Read via {@link #asInteger(String, int)}.
+     */
+    public static final String DSA_MAX_SIZE = "org.bouncycastle.dsa.max_size";
+
+    /**
+     * Upper bound on the PBKDF2 iteration count honoured when deriving the integrity-MAC key of a
+     * BCFKS keystore during load. The KDF runs on parameters taken from the (not-yet-verified)
+     * keystore, so an unbounded iteration count is a pre-integrity CPU-exhaustion vector. Default
+     * 5,000,000 (the BCFKS writer uses ~51,200). Read via {@link #asInteger(String, int)}.
+     */
+    public static final String BCFKS_MAX_IT_COUNT = "org.bouncycastle.bcfks.max_it_count";
+
+    /**
+     * Upper bound, in bytes, on the working memory (~128 * N * r) of the scrypt KDF honoured when
+     * deriving the integrity-MAC key of a BCFKS keystore during load. As with
+     * {@link #BCFKS_MAX_IT_COUNT} the scrypt cost parameters are taken from the not-yet-verified
+     * keystore, so an unbounded cost is a pre-integrity memory-exhaustion vector. Default
+     * 1073741824 (1 GiB); the BCFKS writer uses N=16384, r=8 (~16 MiB). Read via
+     * {@link #asInteger(String, int)}.
+     */
+    public static final String BCFKS_MAX_SCRYPT_MEMORY = "org.bouncycastle.bcfks.max_scrypt_memory";
+
+    /**
+     * Upper bound on the PBKDF2 iteration count honoured when decrypting a PBES2-protected
+     * PKCS#8 / PEM private key. The key-derivation parameters travel inside the (unauthenticated)
+     * encrypted-key container, so an unbounded count makes decrypting attacker-supplied key
+     * material a CPU-exhaustion vector. Default 10,000,000, generous enough for deliberately
+     * strong settings. Read via {@link #asInteger(String, int)}.
+     */
+    public static final String PBE_MAX_ITERATION_COUNT = "org.bouncycastle.pbe.max_iteration_count";
+
+    /**
+     * Upper bound, in bytes, on the scrypt working memory (~128 * N * r) honoured when decrypting
+     * a PBES2-protected PKCS#8 / PEM private key. As with {@link #PBE_MAX_ITERATION_COUNT} the
+     * scrypt cost travels in the unauthenticated container, so an unbounded cost is a
+     * memory-exhaustion vector. Default 1073741824 (1 GiB). Read via {@link #asInteger(String, int)}.
+     */
+    public static final String PBE_MAX_SCRYPT_MEMORY = "org.bouncycastle.pbe.max_scrypt_memory";
+
+    /**
+     * Upper bound on the total number of valid-policy-tree nodes retained (across all depth
+     * levels) during PKIX certification-path validation. Certificate policy mapping combined with
+     * the anyPolicy expansion of RFC 5280 6.1.3/6.1.4 can grow the tree multiplicatively per
+     * certificate, so a crafted chain that still chains to a trust anchor could drive the validator
+     * into exponential memory/CPU consumption -- a denial of service of the class of CVE-2023-0464.
+     * The tree size is checked once per certificate and validation is aborted with a
+     * CertPathValidatorException once it exceeds this bound. The default (8192) is far above any
+     * legitimate policy tree (a real chain produces a handful of nodes) and is configurable for
+     * unusual deployments. Read via {@link #asInteger(String, int)}.
+     */
+    public static final String X509_MAX_POLICY_NODES = "org.bouncycastle.x509.max_policy_nodes";
+
     private Properties()
     {
     }

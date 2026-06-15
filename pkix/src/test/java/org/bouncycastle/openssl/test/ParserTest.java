@@ -21,12 +21,17 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.DSAParams;
 import java.security.interfaces.DSAPrivateKey;
+import java.security.interfaces.DSAPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.cms.CMSObjectIdentifiers;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.asn1.edec.EdECObjectIdentifiers;
@@ -61,6 +66,8 @@ import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.Strings;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemWriter;
 import org.bouncycastle.util.test.SimpleTest;
 
 /**
@@ -242,6 +249,8 @@ public class ParserTest
 
         keyPairTest("DSA", pair);
 
+        dsaVersionTest(pair);
+
         //
         // PKCS7
         //
@@ -284,12 +293,12 @@ public class ParserTest
         doDudPasswordTest("800ce", 2, "unknown tag 26 encountered");
         doDudPasswordTest("b6cd8", 3, "DEF length 81 object truncated by 56");
         doDudPasswordTest("28ce09", 4, "corrupted stream - high tag number < 31 found");
-        doDudPasswordTest("2ac3b9", 5, "long form definite-length more than 31 bits");
+        doDudPasswordTest("2ac3b9", 5, "long form definite-length more than 63 bits");
         doDudPasswordTest("2cba96", 6, "corrupted stream - out of bounds length found: 100 > 67");
         doDudPasswordTest("2e3354", 7, "corrupted stream - out of bounds length found: 42 > 35");
         doDudPasswordTest("2f4142", 8, "corrupted stream - out of bounds length found: 127 > 39");
         doDudPasswordTest("2fe9bb", 9, "long form definite-length more than 31 bits");
-        doDudPasswordTest("3ee7a8", 10, "long form definite-length more than 31 bits");
+        doDudPasswordTest("3ee7a8", 10, "long form definite-length more than 63 bits");
         doDudPasswordTest("41af75", 11, "unknown tag 16 encountered");
         doDudPasswordTest("1704a5", 12, "BOOLEAN value should have 1 byte in it");
         doDudPasswordTest("1c5822", 13, "Extra data detected in stream");
@@ -667,6 +676,67 @@ public class ParserTest
         {
             fail("Failed private key public read: " + name);
         }
+    }
+
+    // GitHub #2319: the traditional "DSA PRIVATE KEY" parser must reject a non-zero version field.
+    private void dsaVersionTest(
+        KeyPair pair)
+        throws Exception
+    {
+        DSAPrivateKey priv = (DSAPrivateKey)pair.getPrivate();
+        DSAParams params = priv.getParams();
+        BigInteger y = ((DSAPublicKey)pair.getPublic()).getY();
+
+        // a well-formed (version 0) traditional DSA key still parses
+        ASN1EncodableVector good = new ASN1EncodableVector(6);
+        good.add(new ASN1Integer(0));
+        good.add(new ASN1Integer(params.getP()));
+        good.add(new ASN1Integer(params.getQ()));
+        good.add(new ASN1Integer(params.getG()));
+        good.add(new ASN1Integer(y));
+        good.add(new ASN1Integer(priv.getX()));
+
+        if (!(readDsaPem(new DERSequence(good).getEncoded()) instanceof PEMKeyPair))
+        {
+            fail("valid DSA private key not parsed");
+        }
+
+        // the same key with a bogus version must be rejected
+        ASN1EncodableVector bad = new ASN1EncodableVector(6);
+        bad.add(new ASN1Integer(17));
+        bad.add(new ASN1Integer(params.getP()));
+        bad.add(new ASN1Integer(params.getQ()));
+        bad.add(new ASN1Integer(params.getG()));
+        bad.add(new ASN1Integer(y));
+        bad.add(new ASN1Integer(priv.getX()));
+
+        try
+        {
+            readDsaPem(new DERSequence(bad).getEncoded());
+            fail("DSA private key with bad version not rejected");
+        }
+        catch (PEMException e)
+        {
+            if (!e.getMessage().equals("wrong version for DSA private key"))
+            {
+                fail("unexpected message: " + e.getMessage());
+            }
+        }
+    }
+
+    private Object readDsaPem(
+        byte[] der)
+        throws IOException
+    {
+        StringWriter sw = new StringWriter();
+        PemWriter pemWriter = new PemWriter(sw);
+
+        pemWriter.writeObject(new PemObject("DSA PRIVATE KEY", der));
+        pemWriter.close();
+
+        PEMParser pemRd = new PEMParser(new StringReader(sw.toString()));
+
+        return pemRd.readObject();
     }
 
     private void doOpenSslTests(

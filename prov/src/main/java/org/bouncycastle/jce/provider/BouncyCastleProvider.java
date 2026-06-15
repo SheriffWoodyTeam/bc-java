@@ -22,6 +22,7 @@ import org.bouncycastle.crypto.CryptoServiceConstraintsException;
 import org.bouncycastle.crypto.CryptoServiceProperties;
 import org.bouncycastle.crypto.CryptoServicePurpose;
 import org.bouncycastle.crypto.CryptoServicesRegistrar;
+import org.bouncycastle.internal.asn1.iana.IANAObjectIdentifiers;
 import org.bouncycastle.internal.asn1.isara.IsaraObjectIdentifiers;
 import org.bouncycastle.jcajce.provider.config.ConfigurableProvider;
 import org.bouncycastle.jcajce.provider.config.ProviderConfiguration;
@@ -137,7 +138,7 @@ public final class BouncyCastleProvider extends Provider
     private static final String[] ASYMMETRIC_CIPHERS =
         {
             "DSA", "DH", "EC", "RSA", "GOST", "ECGOST", "ElGamal", "DSTU4145", "GM", "EdEC", "LMS", "NTRU", "Falcon", "CONTEXT", "SLHDSA", "MLDSA", "MLKEM",
-            "Dilithium", "SPHINCSPlus"
+            "Dilithium", "SPHINCSPlus", "CompositeKEMs"
         };
 
     /*
@@ -422,8 +423,10 @@ public final class BouncyCastleProvider extends Provider
         addKeyInfoConverter(PQCObjectIdentifiers.newHope, new NHKeyFactorySpi());
         addKeyInfoConverter(PQCObjectIdentifiers.xmss, new XMSSKeyFactorySpi());
         addKeyInfoConverter(IsaraObjectIdentifiers.id_alg_xmss, new XMSSKeyFactorySpi());
+        addKeyInfoConverter(IANAObjectIdentifiers.id_alg_xmss_hashsig, new XMSSKeyFactorySpi());
         addKeyInfoConverter(PQCObjectIdentifiers.xmss_mt, new XMSSMTKeyFactorySpi());
         addKeyInfoConverter(IsaraObjectIdentifiers.id_alg_xmssmt, new XMSSMTKeyFactorySpi());
+        addKeyInfoConverter(IANAObjectIdentifiers.id_alg_xmssmt_hashsig, new XMSSMTKeyFactorySpi());
         addKeyInfoConverter(PKCSObjectIdentifiers.id_alg_hss_lms_hashsig, new LMSKeyFactorySpi());
         addKeyInfoConverter(BCObjectIdentifiers.picnic_key, new PicnicKeyFactorySpi());
 
@@ -659,7 +662,10 @@ public final class BouncyCastleProvider extends Provider
 
     public AsymmetricKeyInfoConverter getKeyInfoConverter(ASN1ObjectIdentifier oid)
     {
-        return (AsymmetricKeyInfoConverter)keyInfoConverters.get(oid);
+        synchronized (keyInfoConverters)
+        {
+            return (AsymmetricKeyInfoConverter)keyInfoConverters.get(oid);
+        }
     }
 
     public void addAttributes(String key, Map<String, String> attributeMap)
