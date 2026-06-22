@@ -196,7 +196,7 @@ public class KeyFactorySpi
                 }
                 catch (Exception e)
                 {
-                    throw new IOException("cannot decode generic composite: " + e.getMessage(), e);
+                    throw Exceptions.ioException("cannot decode generic composite: " + e.getMessage(), e);
                 }
             }
 
@@ -302,8 +302,7 @@ public class KeyFactorySpi
         if (MiscObjectIdentifiers.id_alg_composite.equals(keyIdentifier)
             || MiscObjectIdentifiers.id_composite_key.equals(keyIdentifier))
         {
-            // TODO This is redundant with 'seq' calculation above
-            ASN1Sequence keySeq = ASN1Sequence.getInstance(keyInfo.getPublicKeyData().getOctets());
+            ASN1Sequence keySeq = (seq != null) ? seq : ASN1Sequence.getInstance(keyInfo.getPublicKeyData().getOctets());
             PublicKey[] pubKeys = new PublicKey[keySeq.size()];
 
             for (int i = 0; i != keySeq.size(); i++)
@@ -316,7 +315,7 @@ public class KeyFactorySpi
                 }
                 catch (Exception e)
                 {
-                    throw new IOException("cannot decode generic composite: " + e.getMessage(), e);
+                    throw Exceptions.ioException("cannot decode generic composite: " + e.getMessage(), e);
                 }
             }
 
@@ -326,6 +325,11 @@ public class KeyFactorySpi
         try
         {
             int numKeys = (seq == null) ? componentKeys.length : seq.size();
+
+            if (numKeys != 2)
+            {
+                throw new IOException("malformed composite public key: expected exactly two components");
+            }
 
             List<KeyFactory> factories = getKeyFactoriesFromIdentifier(keyIdentifier);
             ASN1BitString[] componentBitStrings = new ASN1BitString[numKeys];
@@ -368,9 +372,14 @@ public class KeyFactorySpi
     }
 
     byte[][] split(ASN1ObjectIdentifier algorithm, ASN1BitString publicKeyData)
+        throws IOException
     {
         int[] sizes = componentKeySizes.get(algorithm);
         byte[] keyData = publicKeyData.getOctets();
+        if (sizes == null || keyData.length < sizes[0])
+        {
+            throw new IOException("malformed composite public key: body shorter than the first component");
+        }
         byte[][] components = new byte[][]{new byte[sizes[0]], new byte[keyData.length - sizes[0]]};
         System.arraycopy(keyData, 0, components[0], 0, sizes[0]);
         System.arraycopy(keyData, sizes[0], components[1], 0, components[1].length);

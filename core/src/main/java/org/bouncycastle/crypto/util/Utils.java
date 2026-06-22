@@ -13,12 +13,14 @@ import org.bouncycastle.asn1.BERTags;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.bc.BCObjectIdentifiers;
 import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
+import org.bouncycastle.internal.asn1.iso.ISOIECObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.digests.SHA512Digest;
 import org.bouncycastle.crypto.digests.SHAKEDigest;
 import org.bouncycastle.crypto.params.MLDSAParameters;
+import org.bouncycastle.crypto.params.FrodoKEMParameters;
 import org.bouncycastle.crypto.params.MLKEMParameters;
 import org.bouncycastle.crypto.params.SLHDSAParameters;
 import org.bouncycastle.internal.asn1.oiw.OIWObjectIdentifiers;
@@ -72,6 +74,9 @@ class Utils
     static final Map mlkemOids = new HashMap<ASN1ObjectIdentifier, MLKEMParameters>();
     static final Map mlkemParams = new HashMap<MLKEMParameters, ASN1ObjectIdentifier>();
 
+    static final Map frodoKemOids = new HashMap();
+    static final Map frodoKemParams = new HashMap();
+
     static final Map mldsaOids = new HashMap<ASN1ObjectIdentifier, MLDSAParameters>();
     static final Map mldsaParams = new HashMap<MLDSAParameters, ASN1ObjectIdentifier>();
 
@@ -110,20 +115,6 @@ class Utils
         mcElieceParams.put(BCObjectIdentifiers.mceliece6960119f_r3, CMCEParameters.mceliece6960119fr3);
         mcElieceParams.put(BCObjectIdentifiers.mceliece8192128_r3, CMCEParameters.mceliece8192128r3);
         mcElieceParams.put(BCObjectIdentifiers.mceliece8192128f_r3, CMCEParameters.mceliece8192128fr3);
-
-        frodoOids.put(FrodoParameters.frodokem640aes, BCObjectIdentifiers.frodokem640aes);
-        frodoOids.put(FrodoParameters.frodokem640shake, BCObjectIdentifiers.frodokem640shake);
-        frodoOids.put(FrodoParameters.frodokem976aes, BCObjectIdentifiers.frodokem976aes);
-        frodoOids.put(FrodoParameters.frodokem976shake, BCObjectIdentifiers.frodokem976shake);
-        frodoOids.put(FrodoParameters.frodokem1344aes, BCObjectIdentifiers.frodokem1344aes);
-        frodoOids.put(FrodoParameters.frodokem1344shake, BCObjectIdentifiers.frodokem1344shake);
-
-        frodoParams.put(BCObjectIdentifiers.frodokem640aes, FrodoParameters.frodokem640aes);
-        frodoParams.put(BCObjectIdentifiers.frodokem640shake, FrodoParameters.frodokem640shake);
-        frodoParams.put(BCObjectIdentifiers.frodokem976aes, FrodoParameters.frodokem976aes);
-        frodoParams.put(BCObjectIdentifiers.frodokem976shake, FrodoParameters.frodokem976shake);
-        frodoParams.put(BCObjectIdentifiers.frodokem1344aes, FrodoParameters.frodokem1344aes);
-        frodoParams.put(BCObjectIdentifiers.frodokem1344shake, FrodoParameters.frodokem1344shake);
 
         saberOids.put(SABERParameters.lightsaberkem128r3, BCObjectIdentifiers.lightsaberkem128r3);
         saberOids.put(SABERParameters.saberkem128r3, BCObjectIdentifiers.saberkem128r3);
@@ -192,6 +183,24 @@ class Utils
         mlkemParams.put(NISTObjectIdentifiers.id_alg_ml_kem_512, MLKEMParameters.ml_kem_512);
         mlkemParams.put(NISTObjectIdentifiers.id_alg_ml_kem_768, MLKEMParameters.ml_kem_768);
         mlkemParams.put(NISTObjectIdentifiers.id_alg_ml_kem_1024, MLKEMParameters.ml_kem_1024);
+
+        frodoKemOids.put(FrodoKEMParameters.frodokem976shake, ISOIECObjectIdentifiers.frodokem976_shake);
+        frodoKemOids.put(FrodoKEMParameters.frodokem1344shake, ISOIECObjectIdentifiers.frodokem1344_shake);
+        frodoKemOids.put(FrodoKEMParameters.efrodokem976shake, ISOIECObjectIdentifiers.efrodokem976_shake);
+        frodoKemOids.put(FrodoKEMParameters.efrodokem1344shake, ISOIECObjectIdentifiers.efrodokem1344_shake);
+        frodoKemOids.put(FrodoKEMParameters.frodokem976aes, ISOIECObjectIdentifiers.frodokem976_aes);
+        frodoKemOids.put(FrodoKEMParameters.frodokem1344aes, ISOIECObjectIdentifiers.frodokem1344_aes);
+        frodoKemOids.put(FrodoKEMParameters.efrodokem976aes, ISOIECObjectIdentifiers.efrodokem976_aes);
+        frodoKemOids.put(FrodoKEMParameters.efrodokem1344aes, ISOIECObjectIdentifiers.efrodokem1344_aes);
+
+        frodoKemParams.put(ISOIECObjectIdentifiers.frodokem976_shake, FrodoKEMParameters.frodokem976shake);
+        frodoKemParams.put(ISOIECObjectIdentifiers.frodokem1344_shake, FrodoKEMParameters.frodokem1344shake);
+        frodoKemParams.put(ISOIECObjectIdentifiers.efrodokem976_shake, FrodoKEMParameters.efrodokem976shake);
+        frodoKemParams.put(ISOIECObjectIdentifiers.efrodokem1344_shake, FrodoKEMParameters.efrodokem1344shake);
+        frodoKemParams.put(ISOIECObjectIdentifiers.frodokem976_aes, FrodoKEMParameters.frodokem976aes);
+        frodoKemParams.put(ISOIECObjectIdentifiers.frodokem1344_aes, FrodoKEMParameters.frodokem1344aes);
+        frodoKemParams.put(ISOIECObjectIdentifiers.efrodokem976_aes, FrodoKEMParameters.efrodokem976aes);
+        frodoKemParams.put(ISOIECObjectIdentifiers.efrodokem1344_aes, FrodoKEMParameters.efrodokem1344aes);
 
         ntruprimeOids.put(NTRULPRimeParameters.ntrulpr653, BCObjectIdentifiers.ntrulpr653);
         ntruprimeOids.put(NTRULPRimeParameters.ntrulpr761, BCObjectIdentifiers.ntrulpr761);
@@ -546,6 +555,16 @@ class Utils
     static MLKEMParameters mlkemParamsLookup(ASN1ObjectIdentifier oid)
     {
         return (MLKEMParameters)mlkemParams.get(oid);
+    }
+
+    static ASN1ObjectIdentifier frodoKemOidLookup(FrodoKEMParameters params)
+    {
+        return (ASN1ObjectIdentifier)frodoKemOids.get(params);
+    }
+
+    static FrodoKEMParameters frodoKemParamsLookup(ASN1ObjectIdentifier oid)
+    {
+        return (FrodoKEMParameters)frodoKemParams.get(oid);
     }
 
     static ASN1ObjectIdentifier ntrulprimeOidLookup(NTRULPRimeParameters params)

@@ -213,6 +213,29 @@ public class Properties
      */
     public static final String X509_MAX_POLICY_NODES = "org.bouncycastle.x509.max_policy_nodes";
 
+    /**
+     * Opt in to the relaxed directoryName name-constraint matching required by GSMA SGP.22 v2.5
+     * (Remote SIM Provisioning), sections 4.5.2.1.0.2 / 4.5.2.1.0.3. When set, a permitted-subtree
+     * RDN is satisfied by any matching subject RDN regardless of position, additional subject
+     * attributes beyond those named in the subtree are tolerated, and a serialNumber RDN is matched
+     * with a startsWith comparison wherever it appears. This is deliberately looser than the
+     * contiguous-prefix DN matching mandated by RFC 5280 7.1, so it defaults to off and must be
+     * enabled explicitly; BC's default validation remains RFC 5280 strict. See github #2327.
+     * Read via {@link #isOverrideSet(String)}.
+     */
+    public static final String X509_SGP22_NAME_CONSTRAINTS = "org.bouncycastle.x509.sgp22_name_constraints";
+
+    /**
+     * Opt in to short AEAD authentication tags for AES-GCM parameters. RFC 5084 constrains the
+     * AES-GCM ICV (tag) length carried in {@code GCMParameters} to 12..16 octets (96..128 bits), and
+     * BC enforces that by default. When this property is set, {@code GCMParameters} additionally
+     * accepts tags down to the NIST SP 800-38D minimum of 4 octets (32 bits; SP 800-38D sec. 5.2.1.2
+     * permits a 32-bit tag for limited applications). Short tags weaken integrity protection, so this
+     * defaults to off and must be enabled explicitly; anything below 4 octets or above 16 octets is
+     * still rejected. Read via {@link #isOverrideSet(String)}.
+     */
+    public static final String GCM_ALLOW_SHORT_TAGS = "org.bouncycastle.gcm.allow_short_tags";
+
     private Properties()
     {
     }

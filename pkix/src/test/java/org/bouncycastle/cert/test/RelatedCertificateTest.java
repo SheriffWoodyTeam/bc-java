@@ -75,13 +75,13 @@ public class RelatedCertificateTest
         throws Exception
     {
         // Pick a fixed epoch-second value to anchor the wire encoding.
-        long sec = 1_700_000_000L;
+        long sec = 1700000000L;
         BinaryTime t = new BinaryTime(sec);
-        assertEquals(BigInteger.valueOf(sec), t.getTime());
+        assertTrue(t.getTime().hasValue(sec));
 
         BinaryTime reparsed = BinaryTime.getInstance(t.getEncoded());
         assertEquals(t, reparsed);
-        assertEquals(sec, reparsed.getTime().longValue());
+        assertTrue(reparsed.getTime().hasValue(sec));
 
         BinaryTime fromDate = new BinaryTime(new Date(sec * 1000L));
         assertEquals(t, fromDate);
@@ -161,7 +161,7 @@ public class RelatedCertificateTest
     {
         IssuerAndSerialNumber certID = new IssuerAndSerialNumber(
             new X500Name("CN=Issuer"), BigInteger.valueOf(0x1234567890L));
-        BinaryTime ts = new BinaryTime(1_700_000_000L);
+        BinaryTime ts = new BinaryTime(1700000000L);
         String[] uris = new String[] {
             "https://example.com/certs/abc.cer",
             "data:application/pkix-cert;base64,Zm9v"
@@ -202,7 +202,7 @@ public class RelatedCertificateTest
     {
         IssuerAndSerialNumber certID = new IssuerAndSerialNumber(
             new X500Name("CN=Issuer"), BigInteger.valueOf(0x42));
-        BinaryTime ts = new BinaryTime(1_700_000_000L);
+        BinaryTime ts = new BinaryTime(1700000000L);
 
         byte[] expected = concat(
             certID.getEncoded(ASN1Encoding.DER),
@@ -245,7 +245,7 @@ public class RelatedCertificateTest
 
         // And the verify must reject a tampered request time.
         RequesterCertificate tampered = new RequesterCertificate(
-            certID, new BinaryTime(ts.getTime().longValue() + 1), uris, value.getSignature().getOctets());
+            certID, new BinaryTime(ts.getTime().longValueExact() + 1), uris, value.getSignature().getOctets());
         ContentVerifier verifier2 = verifierProv.get(signer.getAlgorithmIdentifier());
         assertFalse("tampered requestTime should fail signature verification",
             RelatedCertificateTool.verifyRequesterCertificate(tampered, verifier2));
@@ -305,7 +305,7 @@ public class RelatedCertificateTest
     {
         KeyPair kp = ecKeyPair();
         X500Name name = new X500Name(dn);
-        Date notBefore = new Date(System.currentTimeMillis() - 60_000L);
+        Date notBefore = new Date(System.currentTimeMillis() - 60000L);
         Date notAfter = new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000L);
         JcaX509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
             name, BigInteger.valueOf(System.nanoTime() & 0x7fffffffL),

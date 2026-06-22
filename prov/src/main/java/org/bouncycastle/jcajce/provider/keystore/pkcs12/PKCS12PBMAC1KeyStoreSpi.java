@@ -6,7 +6,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -875,7 +874,7 @@ public class PKCS12PBMAC1KeyStoreSpi
             {
                 PKCS5S2ParametersGenerator pGen = new PKCS5S2ParametersGenerator(new SHA1Digest());
 
-                pGen.init(new String(password).getBytes(StandardCharsets.ISO_8859_1), salt, iterationCount);
+                pGen.init(Strings.toByteArray(new String(password)), salt, iterationCount);
 
                 KeyParameter kParam = (KeyParameter)pGen.generateDerivedParameters(keyLength);
 
@@ -1608,33 +1607,6 @@ public class PKCS12PBMAC1KeyStoreSpi
 
     private void syncFriendlyName()
     {
-        // TODO:delete comment
-        //  Since we cannot add any function to the KeyStore Api we will run code when saving the store
-        // to sync the friendlyNames with Alias depending on the storeParameter
-        /*
-         *     @Override
-         *     public void setFriendlyName(String alias, String newFriendlyName, char[] password) throws UnrecoverableKeyException, NoSuchAlgorithmException
-         *     {
-         *         if (alias.equals(newFriendlyName))
-         *         {
-         *             return;
-         *         }
-         *
-         *         if (engineIsKeyEntry(alias))
-         *         {
-         *             ((PKCS12BagAttributeCarrier)engineGetKey(alias, password)).setFriendlyName(newFriendlyName);
-         *             keyCerts.put(newFriendlyName, keyCerts.get(alias));
-         *             keyCerts.remove(alias);
-         *         }
-         *         else
-         *         {
-         *             certs.put(newFriendlyName, certs.get(alias));
-         *             certs.remove(alias);
-         *         }
-         *         ((PKCS12BagAttributeCarrier)engineGetCertificate(alias)).setFriendlyName(newFriendlyName);
-         *
-         *     }
-         */
         Enumeration cs = keys.keys();
 
         while (cs.hasMoreElements())

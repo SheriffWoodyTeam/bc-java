@@ -10,6 +10,7 @@ import org.bouncycastle.crypto.OutputLengthException;
 import org.bouncycastle.crypto.params.AEADParameters;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.Pack;
 
 /**
  * Implementation of DSTU7624 CCM mode.
@@ -111,11 +112,9 @@ public class KCCMBlockCipher
     public void init(boolean forEncryption, CipherParameters params)
         throws IllegalArgumentException
     {
-
         CipherParameters cipherParameters;
         if (params instanceof AEADParameters)
         {
-
             AEADParameters parameters = (AEADParameters)params;
 
             if (parameters.getMacSize() > MAX_MAC_BIT_LENGTH || parameters.getMacSize() < MIN_MAC_BIT_LENGTH || parameters.getMacSize() % 8 != 0)
@@ -142,14 +141,10 @@ public class KCCMBlockCipher
 
         this.mac = new byte[macSize];
         this.forEncryption = forEncryption;
+
         engine.init(true, cipherParameters);
 
-        counter[0] = 0x01; // defined in standard
-
-        if (initialAssociatedText != null)
-        {
-            processAADBytes(initialAssociatedText, 0, initialAssociatedText.length);
-        }
+        reset();
     }
 
     public String getAlgorithmName()
@@ -172,34 +167,46 @@ public class KCCMBlockCipher
         associatedText.write(in, inOff, len);
     }
 
-    private void processAAD(byte[] assocText, int assocOff, int assocLen, int dataLen)
+    private void processAssociatedText()
     {
-        if (assocLen - assocOff < engine.getBlockSize())
-        {
-            throw new IllegalArgumentException("authText buffer too short");
-        }
-        if (assocLen % engine.getBlockSize() != 0)
+        int aadLen = associatedText.size();
+
+        boolean hasAssocText = aadLen > 0;
+
+        if (hasAssocText && aadLen % engine.getBlockSize() != 0)
         {
             throw new IllegalArgumentException("padding not supported");
         }
 
+        // The G1 block binds the nonce, data length and MAC-size flag into the MAC and must be
+        // processed unconditionally. DSTU 7624 carries the associated-data-present indicator as a flag
+        // bit inside G1, so it is not a gate on computing G1: skipping G1 when no AAD is present leaves
+        // the MAC independent of the nonce and enables cross-nonce forgery.
         System.arraycopy(nonce, 0, G1, 0, nonce.length - Nb_ - 1);
 
-        intToBytes(dataLen, buffer, 0); // for G1
+        int dataLen = data.size() - (forEncryption ? 0 : macSize);
+        Pack.intToLittleEndian(dataLen, buffer, 0); // for G1
 
         System.arraycopy(buffer, 0, G1, nonce.length - Nb_ - 1, BYTES_IN_INT);
 
-        G1[G1.length - 1] = getFlag(true, macSize);
+        G1[G1.length - 1] = getFlag(hasAssocText, macSize);
 
         engine.processBlock(G1, 0, macBlock, 0);
 
-        intToBytes(assocLen, buffer, 0); // for G2
-
-        if (assocLen <= engine.getBlockSize() - Nb_)
+        if (!hasAssocText)
         {
-            for (int byteIndex = 0; byteIndex < assocLen; byteIndex++)
+            return;
+        }
+
+        Pack.intToLittleEndian(aadLen, buffer, 0); // for G2
+
+        byte[] aad = associatedText.getBuffer();
+
+        if (aadLen <= engine.getBlockSize() - Nb_)
+        {
+            for (int byteIndex = 0; byteIndex < aadLen; byteIndex++)
             {
-                buffer[byteIndex + Nb_] ^= assocText[assocOff + byteIndex];
+                buffer[byteIndex + Nb_] ^= aad[byteIndex];
             }
 
             for (int byteIndex = 0; byteIndex < engine.getBlockSize(); byteIndex++)
@@ -219,12 +226,13 @@ public class KCCMBlockCipher
 
         engine.processBlock(macBlock, 0, macBlock, 0);
 
-        int authLen = assocLen;
+        int assocOff = 0;
+        int authLen = aadLen;
         while (authLen != 0)
         {
             for (int byteIndex = 0; byteIndex < engine.getBlockSize(); byteIndex++)
             {
-                macBlock[byteIndex] ^= assocText[byteIndex + assocOff];
+                macBlock[byteIndex] ^= aad[byteIndex + assocOff];
             }
 
             engine.processBlock(macBlock, 0, macBlock, 0);
@@ -266,17 +274,7 @@ public class KCCMBlockCipher
             throw new OutputLengthException("output buffer too short");
         }
 
-        if (associatedText.size() > 0)
-        {
-            if (forEncryption)
-            {
-                processAAD(associatedText.getBuffer(), 0, associatedText.size(), data.size());
-            }
-            else
-            {
-                processAAD(associatedText.getBuffer(), 0, associatedText.size(), data.size() - macSize);
-            }
-        }
+        processAssociatedText();
 
         if (forEncryption)
         {
@@ -447,7 +445,7 @@ public class KCCMBlockCipher
         Arrays.fill(buffer, (byte)0);
         Arrays.fill(counter, (byte)0);
         Arrays.fill(macBlock, (byte)0);
-        counter[0] = 0x01;
+        counter[0] = 0x01; // defined in standard
         data.reset();
         associatedText.reset();
 
@@ -455,18 +453,6 @@ public class KCCMBlockCipher
         {
             processAADBytes(initialAssociatedText, 0, initialAssociatedText.length);
         }
-    }
-
-
-    private void intToBytes(
-        int num,
-        byte[] outBytes,
-        int outOff)
-    {
-        outBytes[outOff + 3] = (byte)(num >> 24);
-        outBytes[outOff + 2] = (byte)(num >> 16);
-        outBytes[outOff + 1] = (byte)(num >> 8);
-        outBytes[outOff] = (byte)num;
     }
 
     private byte getFlag(boolean authTextPresents, int macSize)
