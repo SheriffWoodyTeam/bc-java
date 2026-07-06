@@ -375,7 +375,7 @@ public class RSABlindSignatureTest
 
         byte[] preparedMsg = params.isRandomized()
             ? concat(msgPrefix, msg)
-            : msg.clone();
+            : (byte[])msg.clone();
 
         // RFC 9474 Blind, composed exactly as RSABlindSignatureClient.blind() does
         // (PSSSigner over RSABlindingEngine) but with the fixed Appendix A salt and
@@ -502,7 +502,7 @@ public class RSABlindSignatureTest
         catch (Exception e)
         {
             isTrue("finalize wrong-length message",
-                e.getMessage() != null && e.getMessage().contains("unexpected input size"));
+                e.getMessage() != null && e.getMessage().indexOf("unexpected input size") >= 0);
         }
 
         RSABlindSignatureServer server = new RSABlindSignatureServer(privateKey);
@@ -514,7 +514,7 @@ public class RSABlindSignatureTest
         catch (Exception e)
         {
             isTrue("BlindSign wrong-length message",
-                e.getMessage() != null && e.getMessage().contains("wrong length"));
+                e.getMessage() != null && e.getMessage().indexOf("wrong length") >= 0);
         }
     }
 

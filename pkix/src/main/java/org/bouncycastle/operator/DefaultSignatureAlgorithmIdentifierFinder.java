@@ -279,9 +279,6 @@ public class DefaultSignatureAlgorithmIdentifierFinder
         addAlgorithm("DILITHIUM2", NISTObjectIdentifiers.id_ml_dsa_44);
         addAlgorithm("DILITHIUM3", NISTObjectIdentifiers.id_ml_dsa_65);
         addAlgorithm("DILITHIUM5", NISTObjectIdentifiers.id_ml_dsa_87);
-        addAlgorithm("DILITHIUM2-AES", BCObjectIdentifiers.dilithium2_aes);
-        addAlgorithm("DILITHIUM3-AES", BCObjectIdentifiers.dilithium3_aes);
-        addAlgorithm("DILITHIUM5-AES", BCObjectIdentifiers.dilithium5_aes);
 
         addAlgorithm("ML-DSA-44", NISTObjectIdentifiers.id_ml_dsa_44);
         addAlgorithm("ML-DSA-65", NISTObjectIdentifiers.id_ml_dsa_65);
@@ -480,9 +477,6 @@ public class DefaultSignatureAlgorithmIdentifierFinder
         // Dilithium
         //
         noParams.add(BCObjectIdentifiers.dilithium);
-        noParams.add(BCObjectIdentifiers.dilithium2_aes);
-        noParams.add(BCObjectIdentifiers.dilithium3_aes);
-        noParams.add(BCObjectIdentifiers.dilithium5_aes);
 
         noParams.add(PKCSObjectIdentifiers.id_alg_hss_lms_hashsig);
         noParams.add(NISTObjectIdentifiers.id_ml_dsa_44);
@@ -557,7 +551,7 @@ public class DefaultSignatureAlgorithmIdentifierFinder
         noParams.add(EdECObjectIdentifiers.id_Ed25519);
         noParams.add(EdECObjectIdentifiers.id_Ed448);
 
-        // RFC 8692
+        // RFC 8692 (X.509) / RFC 8702 (CMS) - parameters MUST be absent
         noParams.add(X509ObjectIdentifiers.id_rsassa_pss_shake128);
         noParams.add(X509ObjectIdentifiers.id_rsassa_pss_shake256);
         noParams.add(X509ObjectIdentifiers.id_ecdsa_with_shake128);

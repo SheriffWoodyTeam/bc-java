@@ -120,7 +120,7 @@ public class SignatureSpi
 
         if (alg.equals("Ed448"))
         {
-            return prehash ? new Ed448phSigner(ctx) : new Ed448Signer(ctx);
+            return prehash ? (Signer)new Ed448phSigner(ctx) : new Ed448Signer(ctx);
         }
         else
         {

@@ -11,7 +11,10 @@ import java.util.Set;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1IA5String;
 import org.bouncycastle.asn1.ASN1OctetString;
+import org.bouncycastle.asn1.ASN1PrintableString;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1String;
+import org.bouncycastle.asn1.x500.AttributeTypeAndValue;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.style.IETFUtils;
@@ -316,51 +319,41 @@ public class PKIXNameConstraintValidator
 
     private static boolean withinDNSubtree(ASN1Sequence dns, ASN1Sequence subtree)
     {
-        if (subtree.size() < 1 || subtree.size() > dns.size())
+        // An empty subtree would be a prefix of every DN; treat it as "no match" instead, so an empty permitted
+        // base can't nullify the permittedSubtrees restriction.
+        if (subtree.size() < 1)
         {
             return false;
         }
 
+        // A prefix can't be longer than the DN.
+        if (subtree.size() > dns.size())
+        {
+            return false;
+        }
+
+        // Relaxed anywhere-match needed for GSMA SGP.22, gated behind a property.
         if (Properties.isOverrideSet(Properties.X509_SGP22_NAME_CONSTRAINTS))
         {
             return withinDNSubtreeSGP22(dns, subtree);
         }
 
-        // RFC 5280 4.2.1.10 / 7.1: a directoryName constraint is satisfied only when the constraint's
-        // RDNSequence is an initial prefix of the subject's. Match from index 0 only - searching for
-        // the constraint's first RDN at an arbitrary offset let an attacker prepend RDNs ahead of the
-        // permitted sequence (e.g. a subject C=FR,O=Attacker,C=US,O=TrustedOrg,CN=x being judged
-        // inside permitted subtree C=US,O=TrustedOrg) and still pass the permittedSubtrees check. The
-        // relaxed anywhere-match needed for GSMA SGP.22 stays behind Properties.X509_SGP22_NAME_CONSTRAINTS.
-        int start = 0;
+        // RFC 5280 4.2.1.10 / 7.1: a directoryName constraint is satisfied only when the constraint's RDNSequence
+        // is an initial prefix of the subject's. Match from index 0 only - searching for the constraint's first RDN
+        // at an arbitrary offset let an attacker prepend RDNs ahead of the permitted sequence (e.g. a subject
+        // C=FR,O=Attacker,C=US,O=TrustedOrg,CN=x being judged inside permitted subtree C=US,O=TrustedOrg) and still
+        // pass the permittedSubtrees check.
 
         for (int j = 0; j < subtree.size(); j++)
         {
             // both subtree and dns are a ASN.1 Name and the elements are a RDN
             RDN subtreeRdn = RDN.getInstance(subtree.getObjectAt(j));
-            RDN dnsRdn = RDN.getInstance(dns.getObjectAt(start + j));
+            RDN dnsRdn = RDN.getInstance(dns.getObjectAt(j));
 
-            // check if types and values of all naming attributes are matching, other types which are not restricted are allowed, see https://tools.ietf.org/html/rfc5280#section-7.1
-            if (subtreeRdn.size() == dnsRdn.size())
-            {
-                // Two relative distinguished names
-                //   RDN1 and RDN2 match if they have the same number of naming attributes
-                //   and for each naming attribute in RDN1 there is a matching naming attribute in RDN2.
-                //   NOTE: this is checking the attributes in the same order, which might be not necessary, if this is a problem also IETFUtils.rDNAreEqual must be changed.
-                // use new RFC 5280 comparison, NOTE: this is now different from with RFC 3280, where only binary comparison is used
-                // obey RFC 5280 7.1
-                // NOTE: the GSMA SGP.22 serialNumber startsWith concession is gated behind
-                // Properties.X509_SGP22_NAME_CONSTRAINTS (see withinDNSubtreeSGP22); this path stays strict.
-                if (!subtreeRdn.getFirst().getType().equals(dnsRdn.getFirst().getType()))
-                {
-                    return false;
-                }
-                if (!IETFUtils.rDNAreEqual(subtreeRdn, dnsRdn))
-                {
-                    return false;
-                }
-            }
-            else
+            // Obey RFC 5280 7.1. Two relative distinguished names RDN1 and RDN2 match if they have the same number
+            // of naming attributes and for each naming attribute in RDN1 there is a matching naming attribute in
+            // RDN2. NOTE: this is now different from the RFC 3280 version, where only binary comparison was used.
+            if (!IETFUtils.rDNAreEqual(subtreeRdn, dnsRdn))
             {
                 return false;
             }
@@ -379,28 +372,36 @@ public class PKIXNameConstraintValidator
      */
     private static boolean withinDNSubtreeSGP22(ASN1Sequence dns, ASN1Sequence subtree)
     {
+        int count = dns.size();
+        RDN[] dnsRdns = new RDN[count];
+        for (int i = 0; i < count; ++i)
+        {
+            dnsRdns[i] = RDN.getInstance(dns.getObjectAt(i));
+        }
+
         for (int i = 0; i < subtree.size(); i++)
         {
             RDN subtreeRdn = RDN.getInstance(subtree.getObjectAt(i));
 
-            boolean matched = false;
-            for (int j = 0; j < dns.size(); j++)
-            {
-                RDN dnsRdn = RDN.getInstance(dns.getObjectAt(j));
-                if (rdnMatchesSGP22(subtreeRdn, dnsRdn))
-                {
-                    matched = true;
-                    break;
-                }
-            }
-
-            if (!matched)
+            if (!rdnMatchesSGP22Any(subtreeRdn, dnsRdns))
             {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private static boolean rdnMatchesSGP22Any(RDN subtreeRdn, RDN[] dnsRdns)
+    {
+        for (int i = 0; i < dnsRdns.length; ++i)
+        {
+            if (rdnMatchesSGP22(subtreeRdn, dnsRdns[i]))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean rdnMatchesSGP22(RDN subtreeRdn, RDN dnsRdn)
@@ -410,15 +411,31 @@ public class PKIXNameConstraintValidator
             return false;
         }
 
-        if (!subtreeRdn.getFirst().getType().equals(dnsRdn.getFirst().getType()))
+        AttributeTypeAndValue subtreeFirst = subtreeRdn.getFirst();
+        AttributeTypeAndValue dnsFirst = dnsRdn.getFirst();
+
+        if (!subtreeFirst.getType().equals(dnsFirst.getType()))
         {
             return false;
         }
 
-        // special treatment of serialNumber for GSMA SGP.22 RSP specification
-        if (subtreeRdn.size() == 1 && subtreeRdn.getFirst().getType().equals(RFC4519Style.serialNumber))
+        // Special treatment of serialNumber for the GSMA SGP.22 RSP specification: the constraint's
+        // IIN is a prefix (EID digits 1 to 8) of the subject's EID. The subject side is held to the
+        // encoding SGP.22 explicitly mandates (the EID "as a decimal PrintableString"); the constraint
+        // side accepts any ASN.1 string form - X.520 binds serialNumber to PrintableString there too,
+        // but only by inheritance, and refusing a misencoded trust-side IIN would reject every leaf
+        // under that EUM (the historical code read it type-agnostically via toString). Anything else
+        // falls through to ordinary RDN equality below instead of throwing from an ASN.1 accessor.
+        if (subtreeRdn.size() == 1 && subtreeFirst.getType().equals(RFC4519Style.serialNumber))
         {
-            return dnsRdn.getFirst().getValue().toString().startsWith(subtreeRdn.getFirst().getValue().toString());
+            ASN1Encodable dnsFirstValue = dnsFirst.getValue();
+            ASN1Encodable subtreeFirstValue = subtreeFirst.getValue();
+
+            if (dnsFirstValue instanceof ASN1PrintableString && subtreeFirstValue instanceof ASN1String)
+            {
+                return ((ASN1PrintableString)dnsFirstValue).getString().startsWith(
+                    ((ASN1String)subtreeFirstValue).getString());
+            }
         }
 
         return IETFUtils.rDNAreEqual(subtreeRdn, dnsRdn);
@@ -836,9 +853,14 @@ public class PKIXNameConstraintValidator
     private static void checkPermittedEmail(Set permitted, String email)
         throws NameConstraintValidatorException
     {
-        if (permitted != null
-            && !(email.length() == 0 && permitted.size() == 0)
-            && !isEmailConstrained(permitted, email))
+        if (permitted == null || (email.length() == 0 && permitted.size() == 0))
+        {
+            return;
+        }
+
+        checkEmailNotAmbiguous(email);
+
+        if (!isEmailConstrained(permitted, email))
         {
             throw new NameConstraintValidatorException("Subject email address is not from a permitted subtree.");
         }
@@ -847,9 +869,33 @@ public class PKIXNameConstraintValidator
     private static void checkExcludedEmail(Set excluded, String email)
         throws NameConstraintValidatorException
     {
+        if (excluded.isEmpty())
+        {
+            return;
+        }
+
+        checkEmailNotAmbiguous(email);
+
         if (isEmailConstrained(excluded, email))
         {
             throw new NameConstraintValidatorException("Email address is from an excluded subtree.");
+        }
+    }
+
+    /**
+     * A tested rfc822Name must have exactly one '@': a quoted local part may legally contain '@'
+     * (RFC 5321 sec. 4.1.2), so a value with more than one is ambiguous and could be split into the
+     * wrong host, evading a constraint. Fail closed rather than guess. This applies to tested names
+     * only; a constraint is matched by whole-string equality, so its '@' positions are immaterial.
+     * Skipped when {@link Properties#X509_ALLOW_LENIENT_RFC822_NAME} opts back in to legacy parsing.
+     */
+    private static void checkEmailNotAmbiguous(String email)
+        throws NameConstraintValidatorException
+    {
+        if (email.indexOf('@') != email.lastIndexOf('@')
+            && !Properties.isOverrideSet(Properties.X509_ALLOW_LENIENT_RFC822_NAME))
+        {
+            throw new NameConstraintValidatorException("Subject email address is ambiguous (multiple '@').");
         }
     }
 

@@ -148,6 +148,21 @@ public class Properties
     public static final String ASN1_ALLOW_NON_DER_TIME = "org.bouncycastle.asn1.allow_non_der_time";
 
     /**
+     * Maximum depth of nested constructed ASN.1 objects the parser will descend before failing
+     * with "maximum nested construction level reached", guarding against stack exhaustion from
+     * deeply nested crafted input. Read as an integer; default 64.
+     */
+    public static final String ASN1_MAX_CONS_DEPTH = "org.bouncycastle.asn1.max_cons_depth";
+
+    /**
+     * Overrides the maximum length accepted for a single definite-length ASN.1 object read from a
+     * stream whose length is not otherwise known. The value is a byte count and may carry a trailing
+     * 'k', 'm' or 'g' multiplier (e.g. "16m"); when unset the limit falls back to the available heap
+     * size. Can also be set per stream via the ASN1InputStream(InputStream, int) constructor.
+     */
+    public static final String ASN1_MAX_LIMIT = "org.bouncycastle.asn1.max_limit";
+
+    /**
      * Upper bound (in bits) on the prime modulus p accepted when validating an imported
      * Diffie-Hellman public key. Validation performs a modular exponentiation / Legendre
      * computation whose cost is super-linear in the size of p, so an unbounded p taken from a
@@ -236,6 +251,18 @@ public class Properties
     public static final String X509_SGP22_NAME_CONSTRAINTS = "org.bouncycastle.x509.sgp22_name_constraints";
 
     /**
+     * Fall back to the legacy lenient parsing of rfc822Name values in X.509 name-constraint checks. By
+     * default the validator is strict about rfc822Name conformance; today that means a tested rfc822Name
+     * with more than one '@' is rejected as ambiguous when email constraints apply (RFC 5321 sec. 4.1.2
+     * allows '@' inside a quoted local part, so the domain is not simply the text after the first '@',
+     * and a wrong split could evade a constraint). When this property is set, that strictness (and any
+     * future rfc822Name conformance strictness) is disabled and the historical permissive parsing is used
+     * instead. Strict is the default; set this only to restore the old behaviour. This is a safety valve,
+     * not a recommended mode. Read via {@link #isOverrideSet(String)}.
+     */
+    public static final String X509_ALLOW_LENIENT_RFC822_NAME = "org.bouncycastle.x509.allow_lenient_rfc822_name";
+
+    /**
      * Opt in to short AEAD authentication tags for AES-GCM parameters. RFC 5084 constrains the
      * AES-GCM ICV (tag) length carried in {@code GCMParameters} to 12..16 octets (96..128 bits), and
      * BC enforces that by default. When this property is set, {@code GCMParameters} additionally
@@ -255,6 +282,17 @@ public class Properties
      * {@code BKS-V1} keystore type. Read via {@link #isOverrideSet(String)}.
      */
     public static final String BKS_ENABLE_V1 = "org.bouncycastle.bks.enable_v1";
+
+    /**
+     * Upper bound on the PKCS#12-PBE iteration count honoured when loading a BKS keystore. The
+     * count drives the integrity-MAC key derivation in {@code BcKeyStoreSpi.engineLoad} (and the
+     * per-entry sealed-key decryption), and is read from the (not-yet-verified) keystore ahead of
+     * the HMAC integrity check, so an unbounded value is a pre-integrity CPU-exhaustion vector -
+     * the analogue of {@link #BCFKS_MAX_IT_COUNT} / {@link #PKCS12_MAX_IT_COUNT} for the BKS
+     * format (the sibling UBER store already caps its own count). Default 1048576 (1 << 20); the
+     * BKS writer uses ~1024-2047. Read via {@link #asInteger(String, int)}.
+     */
+    public static final String BKS_MAX_IT_COUNT = "org.bouncycastle.bks.max_it_count";
 
     private Properties()
     {

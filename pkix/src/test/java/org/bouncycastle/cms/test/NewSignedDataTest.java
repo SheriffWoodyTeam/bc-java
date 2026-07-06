@@ -520,8 +520,7 @@ public class NewSignedDataTest
       + "cnlwdG9wcm8ucnUxCzAJBgNVBAYTAlJVMRMwEQYDVQQKEwpDUllQVE8tUFJP"
       + "MR8wHQYDVQQDExZUZXN0IENlbnRlciBDUllQVE8tUFJPAgopoLG9AAIAArWe"
       + "MAoGBiqFAwICCQUAMAoGBiqFAwICEwUABED0Gs9zP9lSz/2/e3BUSpzCI3dx"
-      + "39gfl/pFVkx4p5N/GW5o4gHIST9OhDSmdxwpMSK+39YSRD4R0Ue0faOqWEsj"
-      + "AAAAAAAAAAAAAAAAAAAAAA==");
+      + "39gfl/pFVkx4p5N/GW5o4gHIST9OhDSmdxwpMSK+39YSRD4R0Ue0faOqWEsj");
 
     private static final byte[] noAttrEncData = Base64.decode(
        "MIIFjwYJKoZIhvcNAQcCoIIFgDCCBXwCAQExDTALBglghkgBZQMEAgEwgdAG"
@@ -872,8 +871,11 @@ public class NewSignedDataTest
             _signEcGostKP = CMSTestUtil.makeEcGostKeyPair();
             _signEcGostCert = CMSTestUtil.makeCertificate(_signEcGostKP, _signDN, _origKP, _origDN);
 
-            _signEcGost2012_256KP = CMSTestUtil.makeEcGost2012_256KeyPair();
-            _signEcGost2012_256Cert = CMSTestUtil.makeCertificate(_signEcGost2012_256KP, _signDN, _origKP, _origDN);
+            if (CMSTestUtil.ecGost2012_256Kpg != null)
+            {
+                _signEcGost2012_256KP = CMSTestUtil.makeEcGost2012_256KeyPair();
+                _signEcGost2012_256Cert = CMSTestUtil.makeCertificate(_signEcGost2012_256KP, _signDN, _origKP, _origDN);
+            }
 
             _signEd25519KP   = CMSTestUtil.makeEd25519KeyPair();
             _signEd25519Cert = CMSTestUtil.makeCertificate(_signEd25519KP, _signDN, _origKP, _origDN);
@@ -1072,6 +1074,36 @@ public class NewSignedDataTest
         catch (CMSException e)
         {
             assertEquals("no signers present in SignedData", e.getMessage());
+        }
+    }
+
+    /**
+     * Parser robustness: a CMS ContentInfo whose content is tagged [APPLICATION 0]
+     * instead of context [0] makes the ASN.1 layer throw an IllegalArgumentException
+     * ("Expected CONTEXT tag but found APPLICATION") out of ContentInfo. Before the
+     * parse hardening this escaped CMSSignedData(byte[])'s declared "throws CMSException"
+     * as a raw RuntimeException; it must now surface as a CMSException carrying the
+     * original ASN.1 exception as its cause.
+     */
+    public void testMalformedContentTagSurfacesAsCMSException()
+        throws Exception
+    {
+        // SEQUENCE { OBJECT IDENTIFIER 1.2.840.113549.1.7.2 (id-signedData),
+        //            [APPLICATION 0] { INTEGER 0 } }  -- content tagged 0x60, not context [0] 0xA0
+        byte[] malformed = new byte[]{
+            0x30, 0x10, 0x06, 0x09, 0x2a, (byte)0x86, 0x48, (byte)0x86,
+            (byte)0xf7, 0x0d, 0x01, 0x07, 0x02, 0x60, 0x03, 0x02, 0x01, 0x00
+        };
+
+        try
+        {
+            new CMSSignedData(malformed);
+            fail("malformed CMS content must not parse");
+        }
+        catch (CMSException e)
+        {
+            assertTrue("expected the ASN.1 exception to be wrapped as the cause, was "
+                + e.getCause(), e.getCause() instanceof IllegalArgumentException);
         }
     }
 
@@ -2309,6 +2341,12 @@ public class NewSignedDataTest
     public void testEcGost2012_256NoAttributesEncapsulatedViaParser()
         throws Exception
     {
+        if (_signEcGost2012_256Cert == null)
+        {
+            // GOST-2012 absent from this distribution (see CMSTestUtil static init).
+            return;
+        }
+
         List certList = new ArrayList();
         certList.add(_signEcGost2012_256Cert);
         Store certStore = new JcaCertStore(certList);

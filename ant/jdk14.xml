@@ -29,6 +29,11 @@
                 <exclude name="**/lms/**/*.java"/>
                 <exclude name="**/gemss/*.java"/>
                 <exclude name="**/crypto/hash2curve/**/*.java"/>
+                <exclude name="**/crypto/bls/**/*.java"/>
+                <exclude name="**/crypto/signers/BLSSigner.java"/>
+                <exclude name="**/crypto/generators/BLSKeyPairGenerator.java"/>
+                <exclude name="**/crypto/params/BLSPublicKeyParameters.java"/>
+                <exclude name="**/crypto/params/BLSPrivateKeyParameters.java"/>
                 <exclude name="**/rainbow/*.java"/>
                 <exclude name="**/Rainbow*.java"/>
                 <exclude name="**/PhotonBeetle*.java"/>
@@ -53,6 +58,12 @@
 		<exclude name="**/its/**/*.java"/>
                 <exclude name="**/est/**/*.java"/>
                 <exclude name="**/pkix/jcajce/*.java"/>
+                <exclude name="**/cert/plants/**/*.java"/>
+                <exclude name="**/cert/X509CertificateReviewer.java"/>
+                <exclude name="**/cades/CAdESLevel.java"/>
+                <exclude name="**/cades/CAdESLevelDetector.java"/>
+                <exclude name="**/cades/CAdESLongTermValuesUtil.java"/>
+                <exclude name="**/cades/CAdESArchiveTimestampUtil.java"/>
             </fileset>
             <fileset dir="pkix/src/main/java">
                 <include name="**/pkix/jcajce/Jca*.java" />
@@ -85,6 +96,7 @@
                 <exclude name="**/SIKE*.java"/>
                 <exclude name="**/CompositeSign*.java"/>
                 <exclude name="**/COMPOSITE*.java"/>
+                <exclude name="**/CompositeKEMs.java"/>
                 <exclude name="**/rainbow/*.java"/>
                 <exclude name="**/Rainbow*.java"/>
                 <exclude name="**/XMS*.java"/>
@@ -94,6 +106,7 @@
                 <exclude name="**/xmss/**/*.java"/>
                 <exclude name="**/lms/**/*.java"/>
                 <exclude name="**/asymmetric/compositesignatures/*.java"/>
+                <exclude name="**/asymmetric/compositekem/*.java"/>
                 <exclude name="**/asymmetric/DSTU*.java"/>
                 <exclude name="**/asymmetric/dstu/*.java"/>
                 <exclude name="**/asymmetric/ecgost12/*.java"/>
@@ -120,6 +133,25 @@
                 <exclude name="**/pqc/math/**/*.java"/>
                 <exclude name="**/pqc/rainbow/*.java"/>
                 <exclude name="**/pqc/gemss/*.java"/>
+                <exclude name="**/pqc/crypto/faest/**/*.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsXMSS.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsCMCE.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsHawk.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsFaest.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsMQOM.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsSnova.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsSLHDSA.java"/>
+                <exclude name="**/pqc/crypto/test/AllTestsQRUOV.java"/>
+                <exclude name="**/crypto/test/AllTestsSlow.java"/>
+                <exclude name="**/crypto/test/AllTestsOpenBSDBCrypt.java"/>
+                <exclude name="**/crypto/test/AllTestsArgon.java"/>
+                <exclude name="**/pqc/crypto/test/FaestKatTest.java"/>
+                <exclude name="**/pqc/crypto/test/FaestKeyPairAndSignerTest.java"/>
+                <exclude name="**/pqc/crypto/test/HawkTest.java"/>
+                <exclude name="**/pqc/crypto/test/MQOMTest.java"/>
+                <exclude name="**/pqc/crypto/test/MQOMKatTest.java"/>
+                <exclude name="**/pqc/crypto/test/UOVTest.java"/>
+                <exclude name="**/pqc/crypto/test/PqcMalformedInputTest.java"/>
                 <exclude name="**/pqc/**/BitStringTest.java"/>
                 <exclude name="**/pqc/**/XMS*.java"/>
                 <exclude name="**/pqc/**/LMS*.java"/>
@@ -150,6 +182,18 @@
             </fileset>
             <fileset dir="pkix/src/test/java">
                 <exclude name="**/est/**/*.java"/>
+                <exclude name="**/tsp/test/ERSTest.java"/>
+                <exclude name="**/cades/test/CAdESTTest.java"/>
+                <exclude name="**/cades/test/CAdESLTTest.java"/>
+                <exclude name="**/cades/test/CAdESLTATest.java"/>
+                <exclude name="**/cades/test/AllTests.java"/>
+                <exclude name="**/pkix/test/PKIXCertPathReviewerPolicyTreeTest.java"/>
+                <exclude name="**/cms/test/NewSignedDataStreamTest.java"/>
+                <exclude name="**/cms/test/DefiniteLengthLargeDataTest.java"/>
+                <exclude name="**/cert/ocsp/test/AllTests.java"/>
+                <exclude name="**/cert/plants/**/*.java"/>
+                <exclude name="**/cert/test/X509CertificateReviewerTest.java"/>
+                <exclude name="**/pkix/test/QcStatementReviewerTest.java"/>
                 <exclude name="**/pkix/test/RevocationTest.java"/>
                 <exclude name="**/TimeStampTokenInfoUnitTest.java"/>
                 <exclude name="**/cms/test/AnnotatedKeyTest.java"/>
@@ -159,6 +203,7 @@
                 <exclude name="**/PKIXRevocationTest.java"/>
 		<exclude name="**/its/**/*.java"/>
                 <exclude name="**/CheckNameConstraintsTest.java"/>
+                <exclude name="**/cert/ocsp/test/OCSPExceptionalSignatureRejectionTest.java"/>
             </fileset>
             <fileset dir="mail/src/test/java">
 		<exclude name="**/MailGeneralTest.java"/>
@@ -167,10 +212,16 @@
                 <exclude name="**/NewSMIMEAuthEnvelopedTest.java"/>
 	    </fileset>
             <fileset dir="prov/src/test/java">
+                <!-- package-private provider tests: the test jar is unsigned, so classes in
+                     org.bouncycastle.jce.provider would clash with the signed provider jar -->
+                <exclude name="**/jce/provider/*.java"/>
+                <exclude name="**/jce/provider/test/JcajceParameterSpecTest.java"/>
                 <exclude name="**/AEADTest.java"/>
                 <exclude name="**/PQCDHTest.java"/>
                 <exclude name="**/ECEncodingTest.java"/>
                 <exclude name="**/jce/provider/test/ChaCha20Poly1305Test.java"/>
+                <exclude name="**/jce/provider/test/XChaCha20Poly1305Test.java"/>
+                <exclude name="**/jce/provider/test/PKCS12SecretKeyStoreTest.java"/>
                 <exclude name="**/DetDSATest.java"/>
                 <exclude name="**/ECDSA5Test.java"/>
                 <exclude name="**/CRL5Test.java"/>
@@ -203,6 +254,12 @@
             <fileset dir="tls/src/main/javadoc" includes="**/*.html"/>
             <fileset dir="tls/src/test/java" includes="**/*.java">
                 <exclude name="**/jsse/**"/>
+                <exclude name="**/tls/test/MockRawKeysTlsServer.java"/>
+                <exclude name="**/tls/test/MockRawKeysTlsClient.java"/>
+                <exclude name="**/tls/test/TlsRawKeysProtocolTest.java"/>
+                <exclude name="**/tls/test/DTLSRawKeysProtocolTest.java"/>
+                <exclude name="**/tls/test/JcaTlsRawKeysProtocolTest.java"/>
+                <exclude name="**/tls/AllTests.java"/>
                 <exclude name="**/CertChainUtil.java"/>
                 <exclude name="**/TlsTestUtils.java"/>
                 <exclude name="**/TlsServerRawKeysTest.java"/>
@@ -245,6 +302,9 @@
             <fileset dir="pkix/src/test/jdk1.4" includes="**/*.java"/>
             <fileset dir="tls/src/test/jdk1.4" includes="**/*.java"/>
         </copy>
+
+        <!-- The whole jcajce/provider/test package is excluded above; drop its suite aggregator too. -->
+        <delete file="${src.dir}/org/bouncycastle/jcajce/provider/test/AllTests.java"/>
 
         <replaceregexp match="@Deprecated" replace=" " flags="g" byline="true">
             <fileset dir="${src.dir}">

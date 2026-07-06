@@ -51,6 +51,7 @@ public class RegressionTest
         new TBSCertListTest(),
         new TBSCertificateIssuerTest(),
         new AttributeCertificateInfoIssuerTest(),
+        new ParseTest(),
         new ParsingTest(),
         new GeneralNameTest(),
         new NameConstraintsTest(),
@@ -68,7 +69,9 @@ public class RegressionTest
         new IANAObjectIdentifierTest(),
         new StreamLimitTest(),
         new ASN1GeneratorTest(),
-        new LongDefiniteLengthParserTest()
+        new LongDefiniteLengthParserTest(),
+        new DefiniteLengthAllocationTest(),
+        new KeyPurposeIdTest()
     };
 
     public static void main(String[] args)
