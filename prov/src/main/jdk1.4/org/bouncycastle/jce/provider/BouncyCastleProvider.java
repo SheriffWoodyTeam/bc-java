@@ -22,7 +22,6 @@ import org.bouncycastle.jcajce.provider.util.AsymmetricKeyInfoConverter;
 import org.bouncycastle.pqc.asn1.PQCObjectIdentifiers;
 import org.bouncycastle.pqc.jcajce.provider.newhope.NHKeyFactorySpi;
 import org.bouncycastle.pqc.jcajce.provider.sphincs.Sphincs256KeyFactorySpi;
-import org.bouncycastle.pqc.jcajce.provider.dilithium.DilithiumKeyFactorySpi;
 
 /**
  * To add the provider at runtime use:
@@ -51,7 +50,7 @@ import org.bouncycastle.pqc.jcajce.provider.dilithium.DilithiumKeyFactorySpi;
 public final class BouncyCastleProvider extends Provider
     implements ConfigurableProvider
 {
-    private static String info = "BouncyCastle Security Provider v1.85-SNAPSHOT";
+    private static String info = "BouncyCastle Security Provider v1.85";
 
     public static final String PROVIDER_NAME = "BC";
 
@@ -105,7 +104,7 @@ public final class BouncyCastleProvider extends Provider
 
     private static final String[] ASYMMETRIC_CIPHERS =
     {
-        "DSA", "DH", "EC", "RSA", "GOST", "ECGOST", "ElGamal", "DSTU4145", "GM", "EdEC", "Falcon", "NTRU", "CONTEXT", "SLHDSA", "MLDSA", "MLKEM", "SPHINCSPlus"
+        "DSA", "DH", "EC", "RSA", "GOST", "ECGOST", "ElGamal", "DSTU4145", "GM", "EdEC", "Falcon", "NTRU", "CONTEXT", "SLHDSA", "MLDSA", "MLKEM"
     };
 
     /*
@@ -144,7 +143,7 @@ public final class BouncyCastleProvider extends Provider
      */
     public BouncyCastleProvider()
     {
-        super(PROVIDER_NAME, 1.8499, info);
+        super(PROVIDER_NAME, 1.85, info);
 
         AccessController.doPrivileged(new PrivilegedAction()
         {
@@ -246,9 +245,6 @@ public final class BouncyCastleProvider extends Provider
     {
         addKeyInfoConverter(PQCObjectIdentifiers.sphincs256, new Sphincs256KeyFactorySpi());
         addKeyInfoConverter(PQCObjectIdentifiers.newHope, new NHKeyFactorySpi());
-        addKeyInfoConverter(BCObjectIdentifiers.dilithium2, new DilithiumKeyFactorySpi());
-        addKeyInfoConverter(BCObjectIdentifiers.dilithium3, new DilithiumKeyFactorySpi());
-        addKeyInfoConverter(BCObjectIdentifiers.dilithium5, new DilithiumKeyFactorySpi());
     }
 
     public void setParameter(String parameterName, Object parameter)

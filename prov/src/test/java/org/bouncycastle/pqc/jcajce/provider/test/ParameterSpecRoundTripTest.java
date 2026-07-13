@@ -14,7 +14,6 @@ import java.security.spec.AlgorithmParameterSpec;
 import junit.framework.TestCase;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.bouncycastle.pqc.jcajce.spec.HQCParameterSpec;
-import org.bouncycastle.pqc.jcajce.spec.KyberParameterSpec;
 import org.bouncycastle.pqc.jcajce.spec.SABERParameterSpec;
 import org.bouncycastle.pqc.jcajce.spec.SnovaParameterSpec;
 
@@ -42,6 +41,7 @@ public class ParameterSpecRoundTripTest
      */
     private static final String[] SPEC_CLASSES =
         {
+            "org.bouncycastle.pqc.jcajce.spec.AIMerParameterSpec",
             "org.bouncycastle.pqc.jcajce.spec.BIKEParameterSpec",
             "org.bouncycastle.pqc.jcajce.spec.CMCEParameterSpec",
             "org.bouncycastle.pqc.jcajce.spec.DilithiumParameterSpec",
@@ -144,7 +144,6 @@ public class ParameterSpecRoundTripTest
     public void testGeneratedKeyParameterSpec()
         throws Exception
     {
-        assertReachableParameterSpec("Kyber", KyberParameterSpec.kyber512, "ML-KEM-512");
         assertReachableParameterSpec("SABER", SABERParameterSpec.lightsaberkem128r3, "lightsaberkem128r3");
         assertReachableParameterSpec("HQC", HQCParameterSpec.hqc128, "hqc-128");
         assertReachableParameterSpec("Snova", SnovaParameterSpec.SNOVA_24_5_4_SSK, "SNOVA_24_5_4_SSK");

@@ -55,6 +55,7 @@ module org.bouncycastle.provider
     exports org.bouncycastle.crypto.agreement.kdf;
     exports org.bouncycastle.crypto.agreement.owl;
     exports org.bouncycastle.crypto.agreement.srp;
+    exports org.bouncycastle.crypto.bls;
     exports org.bouncycastle.crypto.commitments;
     exports org.bouncycastle.crypto.constraints;
     exports org.bouncycastle.crypto.digests;
@@ -86,11 +87,11 @@ module org.bouncycastle.provider
     exports org.bouncycastle.crypto.util;
     exports org.bouncycastle.i18n;
     exports org.bouncycastle.i18n.filter;
-    exports org.bouncycastle.iana;
     exports org.bouncycastle.jcajce;
     exports org.bouncycastle.jcajce.io;
     exports org.bouncycastle.jcajce.provider.asymmetric;
     exports org.bouncycastle.jcajce.provider.asymmetric.cmce;
+    exports org.bouncycastle.jcajce.provider.asymmetric.compositekem;
     exports org.bouncycastle.jcajce.provider.asymmetric.compositesignatures;
     exports org.bouncycastle.jcajce.provider.asymmetric.dh;
     exports org.bouncycastle.jcajce.provider.asymmetric.dsa;
